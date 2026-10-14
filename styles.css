@@ -336,3 +336,100 @@
 .nc-cal-form .setting-item-control {
 	flex-wrap: wrap;
 }
+
+/* Tasks */
+.nc-tasks {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	padding: 0;
+}
+
+.nc-tasks-add {
+	flex-basis: 100%;
+}
+
+.nc-tasks-body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--size-4-2) var(--size-4-3);
+}
+
+.nc-tasks-list {
+	max-width: var(--file-line-width);
+	margin: 0 auto;
+}
+
+.nc-task {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-1);
+	padding-left: calc(var(--size-4-1) + var(--nc-task-depth, 0) * 24px);
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+}
+
+.nc-task:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nc-task input[type="checkbox"] {
+	flex-shrink: 0;
+	margin-top: 0.2em;
+}
+
+.nc-task-main {
+	min-width: 0;
+	flex: 1;
+}
+
+.nc-task.is-completed .nc-task-title {
+	text-decoration: line-through;
+	color: var(--text-faint);
+}
+
+.nc-task-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.nc-task-meta:empty {
+	display: none;
+}
+
+.nc-task-due.is-overdue {
+	color: var(--text-error);
+}
+
+.nc-task-priority {
+	font-weight: var(--font-semibold);
+}
+
+.nc-task-priority.p1 {
+	color: var(--color-red);
+}
+
+.nc-task-priority.p5 {
+	color: var(--color-orange);
+}
+
+.nc-task-priority.p9 {
+	color: var(--color-blue);
+}
+
+.nc-task-list,
+.nc-task-modal-list {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1);
+}
+
+.nc-tasks button.is-active {
+	color: var(--text-accent);
+}
