@@ -56,6 +56,19 @@ export class NextcloudSettingTab extends PluginSettingTab {
 				}
 			})
 		);
+
+		new Setting(containerEl).setName("Modules").setHeading();
+
+		for (const module of this.plugin.registry.modules) {
+			new Setting(containerEl)
+				.setName(module.name)
+				.setDesc(module.description)
+				.addToggle((toggle) =>
+					toggle
+						.setValue(this.plugin.registry.isEnabled(module.id))
+						.onChange((value) => this.plugin.registry.setEnabled(module.id, value))
+				);
+		}
 	}
 }
 
