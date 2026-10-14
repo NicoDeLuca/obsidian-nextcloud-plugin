@@ -4,8 +4,8 @@ A modular Obsidian plugin that connects to Nextcloud once and provides individua
 Nextcloud apps as modules. Runs on desktop and mobile (macOS, iPadOS, iOS) from a
 single codebase.
 
-**Phase 1:** read-only Nextcloud Cookbook: recipe list and a recipe view with
-temporary checkboxes for ingredients and instructions.
+**Cookbook module:** recipe list, a recipe view with temporary checkboxes for
+ingredients and instructions, and editing/creating recipes as Markdown.
 
 File sync is intentionally out of scope; use Remotely Sync for that.
 
@@ -27,6 +27,43 @@ pushes without a version bump are skipped.
 3. Open recipes from the ribbon (chef hat) or the command *Nextcloud: Open Cookbook recipes*.
 
 The checkbox state is never saved: it resets whenever a recipe is opened again.
+
+### Editing recipes
+
+The pencil in a recipe's header opens it as Markdown; the plus in the recipe list
+(or the command *New Cookbook recipe*) starts a new one. **Save** writes it back to
+Cookbook. If the recipe was changed elsewhere in the meantime, you are asked before
+it is overwritten. The image and nutrition data are kept as they are.
+
+```markdown
+---
+portionen: 4
+vorbereitung: 15 min
+kochzeit: 1 h 20 min
+gesamtzeit:
+kategorie: Dessert
+stichwörter: süß, schnell
+quelle: https://example.com/rezept
+---
+# Pfannkuchen
+
+Description (optional, any number of paragraphs).
+
+## Zutaten
+- 200 g Mehl
+### Topping
+- Ahornsirup
+
+## Zubereitung
+1. Alles verrühren.
+2. In der Pfanne ausbacken.
+   Indented lines continue the step above.
+
+## Werkzeuge
+- Pfanne
+```
+
+Durations accept e.g. `1 h 20 min`, `1h20m`, `2 Stunden`, `45 min` or `45`.
 
 ## Architecture
 

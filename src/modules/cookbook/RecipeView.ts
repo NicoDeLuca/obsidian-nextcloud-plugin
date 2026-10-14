@@ -1,6 +1,7 @@
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
 import { CookbookApi, Recipe } from "./CookbookApi";
+import { formatDuration } from "./RecipeMarkdown";
 
 export const RECIPE_VIEW = "nextcloud-cookbook-recipe";
 
@@ -19,7 +20,11 @@ export class RecipeView extends ItemView {
 	private imageUrl: string | null = null;
 	private renderId = 0;
 
-	constructor(leaf: WorkspaceLeaf, private api: CookbookApi) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private api: CookbookApi,
+		private onEdit: (leaf: WorkspaceLeaf, recipeId: string, name: string) => void
+	) {
 		super(leaf);
 	}
 
@@ -45,6 +50,12 @@ export class RecipeView extends ItemView {
 		this.title = name ?? "Recipe";
 		await super.setState(state, result);
 		await this.render();
+	}
+
+	async onOpen() {
+		this.addAction("pencil", "Edit recipe", () => {
+			if (this.recipeId) this.onEdit(this.leaf, this.recipeId, this.title);
+		});
 	}
 
 	async onClose() {
@@ -80,9 +91,9 @@ export class RecipeView extends ItemView {
 
 		const meta = [
 			recipe.recipeYield ? `Servings: ${recipe.recipeYield}` : null,
-			formatDuration("Prep", recipe.prepTime),
-			formatDuration("Cook", recipe.cookTime),
-			formatDuration("Total", recipe.totalTime),
+			labelled("Prep", formatDuration(recipe.prepTime)),
+			labelled("Cook", formatDuration(recipe.cookTime)),
+			labelled("Total", formatDuration(recipe.totalTime)),
 		].filter((m): m is string => !!m);
 		if (meta.length) article.createEl("p", { text: meta.join(" · "), cls: "nc-recipe-meta" });
 
@@ -126,13 +137,6 @@ function renderChecklist(listEl: HTMLElement, items: string[]) {
 	}
 }
 
-/** "PT1H20M" → "Prep: 1 h 20 min"; null for empty or zero durations. */
-function formatDuration(label: string, iso: string | null): string | null {
-	const match = iso?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?/);
-	if (!match) return null;
-	const hours = Number(match[1] ?? 0);
-	const minutes = Number(match[2] ?? 0);
-	if (!hours && !minutes) return null;
-	const parts = [hours ? `${hours} h` : "", minutes ? `${minutes} min` : ""].filter(Boolean);
-	return `${label}: ${parts.join(" ")}`;
+function labelled(label: string, duration: string): string | null {
+	return duration ? `${label}: ${duration}` : null;
 }

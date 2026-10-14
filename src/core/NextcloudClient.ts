@@ -23,6 +23,11 @@ export class NextcloudClient {
 		return this.request("PUT", path, JSON.stringify(body));
 	}
 
+	/** POST a JSON body to a path relative to the Nextcloud base URL. */
+	post(path: string, body: unknown): Promise<RequestUrlResponse> {
+		return this.request("POST", path, JSON.stringify(body));
+	}
+
 	/** Checks the credentials and returns the user's display name. */
 	async testConnection(): Promise<string> {
 		const res = await this.get("/ocs/v2.php/cloud/user?format=json");
