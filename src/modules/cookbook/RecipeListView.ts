@@ -9,7 +9,12 @@ export class RecipeListView extends ItemView {
 	private observer: IntersectionObserver | null = null;
 	private renderId = 0;
 
-	constructor(leaf: WorkspaceLeaf, private api: CookbookApi, private openRecipe: (id: string, name: string) => void) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private api: CookbookApi,
+		private openRecipe: (id: string, name: string) => void,
+		private newRecipe: () => void
+	) {
 		super(leaf);
 	}
 
@@ -26,6 +31,7 @@ export class RecipeListView extends ItemView {
 	}
 
 	async onOpen() {
+		this.addAction("plus", "New recipe", () => this.newRecipe());
 		this.addAction("refresh-cw", "Reload", () => this.render());
 		await this.render();
 	}
@@ -34,7 +40,7 @@ export class RecipeListView extends ItemView {
 		this.cleanup();
 	}
 
-	private async render() {
+	async render() {
 		const renderId = ++this.renderId;
 		this.cleanup();
 		const el = this.contentEl;
