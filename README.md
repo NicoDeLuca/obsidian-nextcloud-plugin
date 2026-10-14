@@ -9,6 +9,15 @@ temporary checkboxes for ingredients and instructions.
 
 File sync is intentionally out of scope; use Remotely Sync for that.
 
+## Installation
+
+Install the community plugin **BRAT** on each device, choose *Add beta plugin* and
+enter `NicoDeLuca/obsidian-nextcloud-plugin`. BRAT installs and updates the plugin
+from the GitHub releases, on desktop and mobile alike.
+
+To publish a release: bump `version` in `manifest.json` and `package.json`, then run
+the *Release* workflow in the GitHub Actions tab.
+
 ## Setup
 
 1. In Nextcloud, create an app password under *Settings → Security → Devices & sessions*.
