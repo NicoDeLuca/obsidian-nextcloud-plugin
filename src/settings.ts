@@ -1,4 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { errorMessage } from "./core/NextcloudClient";
 import type NextcloudPlugin from "./main";
 
 export class NextcloudSettingTab extends PluginSettingTab {
@@ -70,9 +71,4 @@ export class NextcloudSettingTab extends PluginSettingTab {
 				);
 		}
 	}
-}
-
-export function errorMessage(e: unknown): string {
-	if (e && typeof e === "object" && "status" in e) return `HTTP ${(e as { status: number }).status}`;
-	return e instanceof Error ? e.message : String(e);
 }

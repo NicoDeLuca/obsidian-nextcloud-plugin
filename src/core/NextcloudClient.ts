@@ -49,6 +49,12 @@ export class NextcloudClient {
 	}
 }
 
+/** Short, user-facing description of a failed request. */
+export function errorMessage(e: unknown): string {
+	if (e && typeof e === "object" && "status" in e) return `HTTP ${(e as { status: number }).status}`;
+	return e instanceof Error ? e.message : String(e);
+}
+
 // btoa only handles Latin-1, so encode as UTF-8 first (usernames may contain umlauts).
 function base64(s: string): string {
 	let bin = "";
