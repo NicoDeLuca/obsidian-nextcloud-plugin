@@ -7,6 +7,9 @@ single codebase.
 **Cookbook module:** recipe list, a recipe view with temporary checkboxes for
 ingredients and instructions, and editing/creating recipes as Markdown.
 
+**Calendar module:** day, 3-day, 5-day, week and month views of your Nextcloud
+calendars (CalDAV), show/hide calendars, and creating, editing and deleting events.
+
 File sync is intentionally out of scope; use Remotely Sync for that.
 
 ## Installation
@@ -65,6 +68,13 @@ Description (optional, any number of paragraphs).
 
 Durations accept e.g. `1 h 20 min`, `1h20m`, `2 Stunden`, `45 min` or `45`.
 
+### Calendar
+
+Open it from the ribbon (calendar icon) or the command *Nextcloud: Open calendar*.
+Click an empty slot or **+** to create an event, click an event to see, edit or
+delete it. The layers button shows or hides calendars. Recurring events are shown
+but can't be edited yet; read-only calendars (e.g. birthdays) are shown only.
+
 ## Architecture
 
 ```
@@ -76,7 +86,8 @@ src/
 │   ├── ModuleRegistry.ts    # loads/unloads modules based on the toggles
 │   └── types.ts
 └── modules/
-    └── cookbook/            # one folder per Nextcloud app
+    ├── cookbook/            # one folder per Nextcloud app
+    └── calendar/
 ```
 
 A module implements `NextcloudModule` and registers its views, commands and ribbon

@@ -55,6 +55,11 @@ export class ModuleRegistry {
 				const el = plugin.addRibbonIcon(icon, title, callback);
 				component.register(() => el.remove());
 			},
+			loadData: <T>() => plugin.settings.moduleData[module.id] as T | undefined,
+			saveData: async (data) => {
+				plugin.settings.moduleData[module.id] = data;
+				await plugin.saveSettings();
+			},
 		};
 		module.load(ctx);
 		this.loaded.set(module.id, component);

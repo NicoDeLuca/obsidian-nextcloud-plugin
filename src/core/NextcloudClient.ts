@@ -20,21 +20,31 @@ export class NextcloudClient {
 
 	/** PUT a JSON body to a path relative to the Nextcloud base URL. */
 	put(path: string, body: unknown): Promise<RequestUrlResponse> {
-		return this.request("PUT", path, JSON.stringify(body));
+		return this.request("PUT", path, { body: JSON.stringify(body), contentType: "application/json" });
 	}
 
 	/** POST a JSON body to a path relative to the Nextcloud base URL. */
 	post(path: string, body: unknown): Promise<RequestUrlResponse> {
-		return this.request("POST", path, JSON.stringify(body));
+		return this.request("POST", path, { body: JSON.stringify(body), contentType: "application/json" });
 	}
 
 	/** Checks the credentials and returns the user's display name. */
 	async testConnection(): Promise<string> {
-		const res = await this.get("/ocs/v2.php/cloud/user?format=json");
-		return res.json.ocs.data.displayname || res.json.ocs.data.id;
+		const user = await this.getCurrentUser();
+		return user.displayName || user.id;
 	}
 
-	private async request(method: string, path: string, body?: string): Promise<RequestUrlResponse> {
+	/** The logged-in user. The id can differ from the login name (e.g. when logging in with an email address). */
+	async getCurrentUser(): Promise<{ id: string; displayName: string }> {
+		const res = await this.get("/ocs/v2.php/cloud/user?format=json");
+		return { id: res.json.ocs.data.id, displayName: res.json.ocs.data.displayname };
+	}
+
+	/**
+	 * Any request to a path relative to the Nextcloud base URL, e.g. WebDAV/CalDAV
+	 * methods like PROPFIND or REPORT. Throws on HTTP >= 400.
+	 */
+	async request(method: string, path: string, options: RequestOptions = {}): Promise<RequestUrlResponse> {
 		if (!this.isConfigured) {
 			throw new Error("Nextcloud connection is not configured.");
 		}
@@ -43,15 +53,29 @@ export class NextcloudClient {
 			Authorization: "Basic " + base64(`${username}:${appPassword}`),
 			Accept: "application/json",
 			"OCS-APIRequest": "true",
+			...options.headers,
 		};
-		if (body !== undefined) headers["Content-Type"] = "application/json";
+		if (options.contentType) headers["Content-Type"] = options.contentType;
 		return requestUrl({
 			url: baseUrl.replace(/\/+$/, "") + path,
 			method,
 			headers,
-			body,
+			body: options.body,
 		});
 	}
+
+	/** Turns an absolute href from a WebDAV response into a path for request(). */
+	hrefToPath(href: string): string {
+		const basePath = new URL(this.getSettings().baseUrl).pathname.replace(/\/+$/, "");
+		return basePath && href.startsWith(basePath + "/") ? href.slice(basePath.length) : href;
+	}
+}
+
+export interface RequestOptions {
+	body?: string;
+	contentType?: string;
+	/** Extra headers; these override the defaults (e.g. Accept). */
+	headers?: Record<string, string>;
 }
 
 /** Short, user-facing description of a failed request. */
