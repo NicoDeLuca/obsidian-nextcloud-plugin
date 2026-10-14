@@ -1,10 +1,12 @@
-# Builds the plugin and publishes a GitHub release (used by BRAT).
-# Bump "version" in manifest.json and package.json, then run this workflow
-# from the Actions tab. The release tag is the manifest version (no "v").
+# Builds the plugin and publishes a GitHub release (used by BRAT) on every
+# push to main whose manifest version has no release yet. To release, bump
+# "version" in manifest.json and package.json and merge. The tag is the
+# manifest version (no "v").
 name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: write
@@ -15,18 +17,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-      - run: npm run build
-
-      - name: Create release
+      - name: Check for new version
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$(node -p "require('./manifest.json').version")
-          gh release create "$version" --target "$GITHUB_SHA" --title "$version" --generate-notes \
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$version" > /dev/null 2>&1; then
+            echo "Release $version already exists, skipping."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.new == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.version.outputs.new == 'true'
+        run: npm ci && npm run build
+
+      - name: Create release
+        if: steps.version.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" --target "$GITHUB_SHA" \
+            --title "${{ steps.version.outputs.version }}" --generate-notes \
             main.js manifest.json styles.css

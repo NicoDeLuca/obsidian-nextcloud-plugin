@@ -15,8 +15,9 @@ Install the community plugin **BRAT** on each device, choose *Add beta plugin* a
 enter `NicoDeLuca/obsidian-nextcloud-plugin`. BRAT installs and updates the plugin
 from the GitHub releases, on desktop and mobile alike.
 
-To publish a release: bump `version` in `manifest.json` and `package.json`, then run
-the *Release* workflow in the GitHub Actions tab.
+To publish a release: bump `version` in `manifest.json` and `package.json` and merge
+to `main`. The *Release* workflow then tags the version and publishes the release;
+pushes without a version bump are skipped.
 
 ## Setup
 
