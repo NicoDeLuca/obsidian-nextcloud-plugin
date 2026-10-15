@@ -88,7 +88,7 @@ export function markdownToRecipe(markdown: string): EditableRecipe {
 	let i = 0;
 	if (lines[0]?.trim() === "---") {
 		const end = lines.findIndex((line, j) => j > 0 && line.trim() === "---");
-		if (end === -1) throw new RecipeFormatError("The frontmatter is missing its closing ---.");
+		if (end === -1) throw new RecipeFormatError("Dem Frontmatter fehlt das abschließende ---.");
 		applyFrontmatter(recipe, lines.slice(1, end).join("\n"));
 		i = end + 1;
 	}
@@ -103,7 +103,7 @@ export function markdownToRecipe(markdown: string): EditableRecipe {
 
 		const h1 = line.match(/^#(?:\s+(.*))?$/);
 		if (h1) {
-			if (titleFound) throw new RecipeFormatError(`Only one title (# …) is allowed (line ${i + 1}).`);
+			if (titleFound) throw new RecipeFormatError(`Nur ein Titel (# …) ist erlaubt (Zeile ${i + 1}).`);
 			titleFound = true;
 			recipe.name = (h1[1] ?? "").trim();
 			section = "description";
@@ -118,7 +118,7 @@ export function markdownToRecipe(markdown: string): EditableRecipe {
 			else if (name === SECTIONS.tools.toLowerCase()) section = "tools";
 			else
 				throw new RecipeFormatError(
-					`Unknown section "## ${h2[1].trim()}" (line ${i + 1}). Allowed: ${Object.values(SECTIONS).join(", ")}.`
+					`Unbekannter Abschnitt "## ${h2[1].trim()}" (Zeile ${i + 1}). Erlaubt: ${Object.values(SECTIONS).join(", ")}.`
 				);
 			continue;
 		}
@@ -130,7 +130,7 @@ export function markdownToRecipe(markdown: string): EditableRecipe {
 
 		switch (section) {
 			case null:
-				throw new RecipeFormatError(`Text before the title (line ${i + 1}). Start with "# Recipe name".`);
+				throw new RecipeFormatError(`Text vor dem Titel (Zeile ${i + 1}). Beginne mit "# Rezeptname".`);
 			case "description":
 				description.push(text);
 				break;
@@ -153,7 +153,7 @@ export function markdownToRecipe(markdown: string): EditableRecipe {
 		}
 	}
 
-	if (!recipe.name) throw new RecipeFormatError('The recipe needs a title: a line like "# Pancakes".');
+	if (!recipe.name) throw new RecipeFormatError('Das Rezept braucht einen Titel: eine Zeile wie "# Pfannkuchen".');
 	recipe.description = description.join("\n").trim();
 	return recipe;
 }
@@ -163,15 +163,15 @@ function applyFrontmatter(recipe: EditableRecipe, yaml: string) {
 	try {
 		data = parseYaml(yaml) ?? {};
 	} catch (e) {
-		throw new RecipeFormatError(`The frontmatter is not valid YAML: ${e instanceof Error ? e.message : e}`);
+		throw new RecipeFormatError(`Das Frontmatter ist kein gültiges YAML: ${e instanceof Error ? e.message : e}`);
 	}
-	if (typeof data !== "object" || Array.isArray(data)) throw new RecipeFormatError("The frontmatter must be key: value lines.");
+	if (typeof data !== "object" || Array.isArray(data)) throw new RecipeFormatError("Das Frontmatter muss aus Zeilen der Form schlüssel: wert bestehen.");
 
 	for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
 		const text = value === null || value === undefined ? "" : Array.isArray(value) ? value.join(", ") : String(value).trim();
 		switch (key.toLowerCase()) {
 			case FM.yield:
-				if (text && !/^\d+$/.test(text)) throw new RecipeFormatError(`"${FM.yield}" must be a whole number.`);
+				if (text && !/^\d+$/.test(text)) throw new RecipeFormatError(`"${FM.yield}" muss eine ganze Zahl sein.`);
 				recipe.recipeYield = text ? Number(text) : null;
 				break;
 			case FM.prep:
@@ -197,7 +197,7 @@ function applyFrontmatter(recipe: EditableRecipe, yaml: string) {
 				recipe.url = text;
 				break;
 			default:
-				throw new RecipeFormatError(`Unknown field "${key}" in the frontmatter. Allowed: ${Object.values(FM).join(", ")}.`);
+				throw new RecipeFormatError(`Unbekanntes Feld "${key}" im Frontmatter. Erlaubt: ${Object.values(FM).join(", ")}.`);
 		}
 	}
 }
@@ -220,7 +220,7 @@ function parseDuration(field: string, text: string): string | null {
 	if (!text) return null;
 	const match = text.match(/^(?:(\d+)\s*(?:h|std\.?|stunden?)\s*)?(?:(\d+)\s*(?:m|min\.?|minuten?)?)?$/i);
 	if (!match || (match[1] === undefined && match[2] === undefined)) {
-		throw new RecipeFormatError(`"${field}" must be a duration like "1 h 20 min" or "45 min".`);
+		throw new RecipeFormatError(`"${field}" muss eine Dauer wie "1 h 20 min" oder "45 min" sein.`);
 	}
 	const total = Number(match[1] ?? 0) * 60 + Number(match[2] ?? 0);
 	return `PT${Math.floor(total / 60)}H${total % 60}M`;

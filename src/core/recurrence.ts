@@ -48,17 +48,17 @@ export function toRecur(rule: Recurrence, allDay: boolean): ICAL.Recur {
 	return recur;
 }
 
-const UNIT: Record<Frequency, [string, string]> = { DAILY: ["day", "days"], WEEKLY: ["week", "weeks"], MONTHLY: ["month", "months"], YEARLY: ["year", "years"] };
-const SHORT_DAY: Record<string, string> = { MO: "Mon", TU: "Tue", WE: "Wed", TH: "Thu", FR: "Fri", SA: "Sat", SU: "Sun" };
+const EVERY_ONE: Record<Frequency, string> = { DAILY: "Täglich", WEEKLY: "Wöchentlich", MONTHLY: "Monatlich", YEARLY: "Jährlich" };
+const EVERY_N: Record<Frequency, string> = { DAILY: "Tage", WEEKLY: "Wochen", MONTHLY: "Monate", YEARLY: "Jahre" };
+const SHORT_DAY: Record<string, string> = { MO: "Mo", TU: "Di", WE: "Mi", TH: "Do", FR: "Fr", SA: "Sa", SU: "So" };
 
-/** "Every 2 weeks on Mon, Wed, until 31 Dec 2026" */
+/** "Alle 2 Wochen am Mo, Mi, bis 31. Dez. 2026" */
 export function describeRecurrence(rule: Recurrence | "custom"): string {
-	if (rule === "custom") return "Repeats (custom rule)";
-	const [one, many] = UNIT[rule.freq];
-	let text = rule.interval > 1 ? `Every ${rule.interval} ${many}` : `Every ${one}`;
-	if (rule.freq === "WEEKLY" && rule.byDay.length) text += ` on ${sortWeekdays(rule.byDay).map((d) => SHORT_DAY[d]).join(", ")}`;
-	if (rule.end.type === "count") text += `, ${rule.end.count} times`;
-	if (rule.end.type === "until") text += `, until ${moment(rule.end.until).format("ll")}`;
+	if (rule === "custom") return "Wiederholt sich (eigene Regel)";
+	let text = rule.interval > 1 ? `Alle ${rule.interval} ${EVERY_N[rule.freq]}` : EVERY_ONE[rule.freq];
+	if (rule.freq === "WEEKLY" && rule.byDay.length) text += ` am ${sortWeekdays(rule.byDay).map((d) => SHORT_DAY[d]).join(", ")}`;
+	if (rule.end.type === "count") text += `, ${rule.end.count}-mal`;
+	if (rule.end.type === "until") text += `, bis ${moment(rule.end.until).format("ll")}`;
 	return text;
 }
 

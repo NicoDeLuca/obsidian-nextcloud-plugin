@@ -5,17 +5,17 @@ import { ACTIVITY_VIEW, ActivityView } from "./ActivityView";
 
 export const activityModule: NextcloudModule = {
 	id: "activity",
-	name: "Activity",
-	description: "The Nextcloud activity feed: what changed in your files, calendars, shares and more.",
+	name: "Aktivität",
+	description: "Die Nextcloud-Aktivitäten: was sich in Dateien, Kalendern, Freigaben usw. geändert hat.",
 	load(ctx) {
 		const app = ctx.plugin.app;
 		const api = new ActivityApi(ctx.client);
 
 		ctx.registerView(ACTIVITY_VIEW, (leaf) => new ActivityView(leaf, api));
-		ctx.addRibbonIcon("activity", "Open Nextcloud activity", () => openActivity(app));
+		ctx.addRibbonIcon("activity", "Nextcloud-Aktivitäten öffnen", () => openActivity(app));
 		ctx.addCommand({
 			id: "activity-open",
-			name: "Open activity",
+			name: "Aktivitäten öffnen",
 			callback: () => openActivity(app),
 		});
 	},

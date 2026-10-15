@@ -6,16 +6,16 @@ import { DECK_VIEW, DeckView } from "./DeckView";
 export const deckModule: NextcloudModule = {
 	id: "deck",
 	name: "Deck",
-	description: "Kanban boards from Nextcloud Deck: view, add, edit and move cards.",
+	description: "Kanban-Boards aus Nextcloud Deck: Karten ansehen, anlegen, bearbeiten und verschieben.",
 	load(ctx) {
 		const app = ctx.plugin.app;
 		const api = new DeckApi(ctx.client);
 
 		ctx.registerView(DECK_VIEW, (leaf) => new DeckView(leaf, api));
-		ctx.addRibbonIcon("kanban", "Open Deck", () => openDeck(app));
+		ctx.addRibbonIcon("kanban", "Deck öffnen", () => openDeck(app));
 		ctx.addCommand({
 			id: "deck-open",
-			name: "Open Deck",
+			name: "Deck öffnen",
 			callback: () => openDeck(app),
 		});
 	},

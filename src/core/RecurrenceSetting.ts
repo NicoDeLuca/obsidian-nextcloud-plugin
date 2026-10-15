@@ -1,7 +1,7 @@
 import { moment, Setting } from "obsidian";
 import { describeRecurrence, Frequency, Recurrence, weekdayOf, WEEKDAYS } from "./recurrence";
 
-const DAY_LABEL: Record<string, string> = { MO: "Mo", TU: "Tu", WE: "We", TH: "Th", FR: "Fr", SA: "Sa", SU: "Su" };
+const DAY_LABEL: Record<string, string> = { MO: "Mo", TU: "Di", WE: "Mi", TH: "Do", FR: "Fr", SA: "Sa", SU: "So" };
 
 /**
  * "Repeat" settings for event and task forms.
@@ -19,10 +19,10 @@ export function renderRecurrenceSetting(
 
 	const render = () => {
 		el.empty();
-		new Setting(el).setName("Repeat").addDropdown((d) => {
-			d.addOption("", "Never");
-			if (current === "custom") d.addOption("custom", "Custom (kept as is)");
-			d.addOptions({ DAILY: "Daily", WEEKLY: "Weekly", MONTHLY: "Monthly", YEARLY: "Yearly" });
+		new Setting(el).setName("Wiederholen").addDropdown((d) => {
+			d.addOption("", "Nie");
+			if (current === "custom") d.addOption("custom", "Eigene Regel (bleibt unverändert)");
+			d.addOptions({ DAILY: "Täglich", WEEKLY: "Wöchentlich", MONTHLY: "Monatlich", YEARLY: "Jährlich" });
 			d.setValue(current === "custom" ? "custom" : current?.freq ?? "").onChange((freq) => {
 				if (!freq) current = null;
 				else if (freq === "custom") current = "custom";
@@ -40,14 +40,14 @@ export function renderRecurrenceSetting(
 			});
 		});
 		if (current === "custom") {
-			el.createDiv({ cls: "nc-cal-hint", text: `${describeRecurrence("custom")} — created in another app; it stays unchanged.` });
+			el.createDiv({ cls: "nc-cal-hint", text: `${describeRecurrence("custom")} – in einer anderen App angelegt; sie bleibt unverändert.` });
 			return;
 		}
 		if (!current) return;
 		const rule = current;
 		const changed = () => onChange(rule);
 
-		new Setting(el).setName("Every").addText((t) => {
+		new Setting(el).setName("Alle").addText((t) => {
 			t.inputEl.type = "number";
 			t.inputEl.min = "1";
 			t.inputEl.addClass("nc-recurrence-number");
@@ -55,11 +55,11 @@ export function renderRecurrenceSetting(
 				rule.interval = Math.max(1, parseInt(v) || 1);
 				changed();
 			});
-			t.inputEl.insertAdjacentText("afterend", ` ${{ DAILY: "day(s)", WEEKLY: "week(s)", MONTHLY: "month(s)", YEARLY: "year(s)" }[rule.freq]}`);
+			t.inputEl.insertAdjacentText("afterend", ` ${{ DAILY: "Tag(e)", WEEKLY: "Woche(n)", MONTHLY: "Monat(e)", YEARLY: "Jahr(e)" }[rule.freq]}`);
 		});
 
 		if (rule.freq === "WEEKLY") {
-			const days = new Setting(el).setName("On").controlEl.createDiv({ cls: "nc-recurrence-days" });
+			const days = new Setting(el).setName("Am").controlEl.createDiv({ cls: "nc-recurrence-days" });
 			for (const day of WEEKDAYS) {
 				const chip = days.createEl("button", { text: DAY_LABEL[day], cls: "nc-recurrence-day" });
 				chip.toggleClass("is-active", rule.byDay.includes(day));
@@ -75,10 +75,10 @@ export function renderRecurrenceSetting(
 			}
 		}
 
-		const endSetting = new Setting(el).setName("Ends");
+		const endSetting = new Setting(el).setName("Endet");
 		endSetting.addDropdown((d) =>
 			d
-				.addOptions({ never: "Never", count: "After …", until: "On date" })
+				.addOptions({ never: "Nie", count: "Nach …", until: "Am Datum" })
 				.setValue(rule.end.type)
 				.onChange((type) => {
 					if (type === "count") rule.end = { type: "count", count: 10 };
@@ -96,7 +96,7 @@ export function renderRecurrenceSetting(
 				end.count = Math.max(1, parseInt(input.value) || 1);
 				changed();
 			});
-			endSetting.controlEl.createSpan({ text: " times" });
+			endSetting.controlEl.createSpan({ text: " Mal" });
 		}
 		if (rule.end.type === "until") {
 			const end = rule.end;

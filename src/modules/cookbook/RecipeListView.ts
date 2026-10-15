@@ -23,7 +23,7 @@ export class RecipeListView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Recipes";
+		return "Rezepte";
 	}
 
 	getIcon() {
@@ -31,8 +31,8 @@ export class RecipeListView extends ItemView {
 	}
 
 	async onOpen() {
-		this.addAction("plus", "New recipe", () => this.newRecipe());
-		this.addAction("refresh-cw", "Reload", () => this.render());
+		this.addAction("plus", "Neues Rezept", () => this.newRecipe());
+		this.addAction("refresh-cw", "Neu laden", () => this.render());
 		await this.render();
 	}
 
@@ -46,7 +46,7 @@ export class RecipeListView extends ItemView {
 		const el = this.contentEl;
 		el.empty();
 		el.addClass("nc-cookbook");
-		el.createEl("p", { text: "Loading recipes…", cls: "nc-cookbook-status" });
+		el.createEl("p", { text: "Rezepte werden geladen …", cls: "nc-cookbook-status" });
 
 		let recipes;
 		try {
@@ -54,14 +54,14 @@ export class RecipeListView extends ItemView {
 		} catch (e) {
 			if (renderId !== this.renderId) return;
 			el.empty();
-			el.createEl("p", { text: `Could not load recipes: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+			el.createEl("p", { text: `Rezepte konnten nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 			return;
 		}
 
 		if (renderId !== this.renderId) return; // a newer reload took over
 		el.empty();
 		if (recipes.length === 0) {
-			el.createEl("p", { text: "No recipes found.", cls: "nc-cookbook-status" });
+			el.createEl("p", { text: "Keine Rezepte gefunden.", cls: "nc-cookbook-status" });
 			return;
 		}
 

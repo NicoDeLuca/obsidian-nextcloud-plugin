@@ -5,17 +5,17 @@ import { TASKS_VIEW, TasksView } from "./TasksView";
 
 export const tasksModule: NextcloudModule = {
 	id: "tasks",
-	name: "Tasks",
-	description: "View, add, complete and edit tasks from Nextcloud Tasks (CalDAV).",
+	name: "Aufgaben",
+	description: "Aufgaben aus Nextcloud Tasks ansehen, anlegen, abhaken und bearbeiten (CalDAV).",
 	load(ctx) {
 		const app = ctx.plugin.app;
 		const api = new TasksApi(ctx.client);
 
 		ctx.registerView(TASKS_VIEW, (leaf) => new TasksView(leaf, api));
-		ctx.addRibbonIcon("list-checks", "Open tasks", () => openTasks(app));
+		ctx.addRibbonIcon("list-checks", "Aufgaben öffnen", () => openTasks(app));
 		ctx.addCommand({
 			id: "tasks-open",
-			name: "Open tasks",
+			name: "Aufgaben öffnen",
 			callback: () => openTasks(app),
 		});
 	},

@@ -27,7 +27,7 @@ export class ActivityView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Activity";
+		return "Aktivität";
 	}
 
 	getIcon() {
@@ -56,7 +56,7 @@ export class ActivityView extends ItemView {
 		if (!this.bodyEl) return; // setState can run before onOpen
 		const loadId = ++this.loadId;
 		this.bodyEl.empty();
-		this.bodyEl.createEl("p", { text: "Loading…", cls: "nc-cookbook-status" });
+		this.bodyEl.createEl("p", { text: "Wird geladen …", cls: "nc-cookbook-status" });
 		try {
 			// Filters are optional: older servers or a failing request just leave "All".
 			if (!this.filters) this.filters = await this.api.getFilters().catch(() => []);
@@ -67,7 +67,7 @@ export class ActivityView extends ItemView {
 			this.bodyEl.empty();
 			this.lastDay = "";
 			if (!page.activities.length) {
-				this.bodyEl.createEl("p", { text: "No activity.", cls: "nc-cookbook-status" });
+				this.bodyEl.createEl("p", { text: "Keine Aktivitäten.", cls: "nc-cookbook-status" });
 				return;
 			}
 			this.listEl = this.bodyEl.createDiv({ cls: "nc-activity-list" });
@@ -75,7 +75,7 @@ export class ActivityView extends ItemView {
 		} catch (e) {
 			if (loadId !== this.loadId) return;
 			this.bodyEl.empty();
-			this.bodyEl.createEl("p", { text: `Could not load activity: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+			this.bodyEl.createEl("p", { text: `Aktivitäten konnten nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 		}
 	}
 
@@ -83,7 +83,7 @@ export class ActivityView extends ItemView {
 		const bar = this.toolbarEl;
 		bar.empty();
 		const dropdown = new DropdownComponent(bar);
-		const filters = this.filters?.length ? this.filters : [{ id: "all", name: "All activities" }];
+		const filters = this.filters?.length ? this.filters : [{ id: "all", name: "Alle Aktivitäten" }];
 		for (const f of filters) dropdown.addOption(f.id, f.name);
 		if (!filters.some((f) => f.id === this.filter)) this.filter = filters[0].id;
 		dropdown.setValue(this.filter).onChange((filter) => {
@@ -93,7 +93,7 @@ export class ActivityView extends ItemView {
 		});
 		new ButtonComponent(bar.createDiv({ cls: "nc-cal-toolbar-group" }))
 			.setIcon("refresh-cw")
-			.setTooltip("Reload")
+			.setTooltip("Neu laden")
 			.onClick(() => this.loadFeed());
 	}
 
@@ -110,9 +110,9 @@ export class ActivityView extends ItemView {
 		if (next === null) return;
 
 		const more = list.createDiv({ cls: "nc-activity-more" });
-		new ButtonComponent(more).setButtonText("Load more").onClick(async () => {
+		new ButtonComponent(more).setButtonText("Mehr laden").onClick(async () => {
 			more.empty();
-			more.createSpan({ text: "Loading…", cls: "nc-cookbook-status" });
+			more.createSpan({ text: "Wird geladen …", cls: "nc-cookbook-status" });
 			try {
 				const page = await this.api.getActivities(this.filter, next);
 				if (loadId !== this.loadId) return;
@@ -120,7 +120,7 @@ export class ActivityView extends ItemView {
 				this.appendPage(page.activities, page.next, loadId);
 			} catch (e) {
 				more.empty();
-				more.createSpan({ text: `Could not load more: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+				more.createSpan({ text: `Weitere konnten nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 			}
 		});
 	}
@@ -138,7 +138,7 @@ export class ActivityView extends ItemView {
 
 		if (activity.link) {
 			row.addClass("is-link");
-			row.setAttr("title", "Open in Nextcloud");
+			row.setAttr("title", "In Nextcloud öffnen");
 			row.addEventListener("click", () => window.open(activity.link, "_blank"));
 		}
 	}
@@ -164,7 +164,7 @@ function renderSubject(el: HTMLElement, activity: Activity) {
 
 function dayLabel(date: Date): string {
 	const days = moment().startOf("day").diff(moment(date).startOf("day"), "days");
-	if (days === 0) return "Today";
-	if (days === 1) return "Yesterday";
+	if (days === 0) return "Heute";
+	if (days === 1) return "Gestern";
 	return moment(date).format("dddd, ll");
 }

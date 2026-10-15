@@ -46,7 +46,7 @@ export class NextcloudClient {
 	 */
 	async request(method: string, path: string, options: RequestOptions = {}): Promise<RequestUrlResponse> {
 		if (!this.isConfigured) {
-			throw new Error("Nextcloud connection is not configured.");
+			throw new Error("Die Nextcloud-Verbindung ist noch nicht eingerichtet (Einstellungen → Nextcloud).");
 		}
 		const { baseUrl, username, appPassword } = this.getSettings();
 		const headers: Record<string, string> = {
