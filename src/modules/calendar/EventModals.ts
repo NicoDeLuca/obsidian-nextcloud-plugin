@@ -1,7 +1,8 @@
 import { App, ButtonComponent, Modal, moment, Notice, Setting } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
+import { renderRecurrenceSetting } from "../../core/RecurrenceSetting";
 import type { CalendarInfo } from "./CalDavApi";
-import { CalendarEvent, EventDraft } from "./ics";
+import { CalendarEvent, EventDraft, RuleChoice, Scope } from "./ics";
 
 /** Shows one event; edit/delete are offered only where they are supported. */
 export class EventDetailModal extends Modal {
@@ -28,10 +29,7 @@ export class EventDetailModal extends Modal {
 			contentEl.createEl("p", { text: "This calendar is read-only.", cls: "nc-cal-hint" });
 			return;
 		}
-		if (event.recurring) {
-			contentEl.createEl("p", { text: "Recurring events can't be edited here yet.", cls: "nc-cal-hint" });
-			return;
-		}
+		if (event.recurring) contentEl.createEl("p", { text: "↻ Part of a recurring series", cls: "nc-cal-hint" });
 		new Setting(contentEl)
 			.addButton((b) =>
 				b
@@ -71,13 +69,18 @@ export class EventFormModal extends Modal {
 			calendar: CalendarInfo;
 			/** Calendars to choose from; omitted when the calendar can't be changed (editing). */
 			calendars?: CalendarInfo[];
-			save: (draft: EventDraft, calendar: CalendarInfo) => Promise<void>;
+			/** The series rule to edit; undefined hides the "Repeat" settings (single occurrence). */
+			rule?: RuleChoice;
+			save: (draft: EventDraft, calendar: CalendarInfo, rule: RuleChoice) => Promise<void>;
 		}
 	) {
 		super(app);
 		this.draft = { ...options.draft };
 		this.calendar = options.calendar;
+		this.rule = options.rule ?? null;
 	}
+
+	private rule: RuleChoice;
 
 	onOpen() {
 		const { contentEl } = this;
@@ -127,6 +130,10 @@ export class EventFormModal extends Modal {
 		};
 		renderTimes();
 
+		if (this.options.rule !== undefined) {
+			renderRecurrenceSetting(contentEl, this.rule, () => draft.start, (rule) => (this.rule = rule));
+		}
+
 		new Setting(contentEl).setName("Location").addText((t) => t.setValue(draft.location).onChange((v) => (draft.location = v)));
 		new Setting(contentEl).setName("Description").addTextArea((t) => {
 			t.setValue(draft.description).onChange((v) => (draft.description = v));
@@ -148,7 +155,7 @@ export class EventFormModal extends Modal {
 						}
 						saveButton.setDisabled(true);
 						try {
-							await this.options.save({ ...draft, title: draft.title.trim() }, this.calendar);
+							await this.options.save({ ...draft, title: draft.title.trim() }, this.calendar, this.rule);
 							this.close();
 						} catch (e) {
 							new Notice(`Could not save event: ${errorMessage(e)}`, 8000);
@@ -199,6 +206,30 @@ export class EventFormModal extends Modal {
 		timeInput?.addEventListener("change", update);
 		return { refresh };
 	}
+}
+
+/** Asks which part of a recurring series an edit or delete applies to; null when cancelled. */
+export function chooseScope(app: App, title: string): Promise<Scope | null> {
+	return new Promise((resolve) => {
+		let scope: Scope | null = null;
+		const modal = new Modal(app);
+		modal.titleEl.setText(title);
+		modal.contentEl.createEl("p", { text: "This event is part of a recurring series." });
+		const choices: [Scope, string][] = [
+			["this", "This event"],
+			["following", "This and following events"],
+			["all", "All events"],
+		];
+		const buttons = modal.contentEl.createDiv({ cls: "nc-scope-choices" });
+		for (const [value, label] of choices) {
+			new ButtonComponent(buttons).setButtonText(label).onClick(() => {
+				scope = value;
+				modal.close();
+			});
+		}
+		modal.onClose = () => resolve(scope);
+		modal.open();
+	});
 }
 
 export function formatRange(event: { start: Date; end: Date; allDay: boolean }): string {

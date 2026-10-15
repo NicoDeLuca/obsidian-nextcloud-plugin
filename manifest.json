@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-nextcloud-plugin",
 	"name": "Nextcloud",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"minAppVersion": "1.7.2",
 	"description": "Connects to Nextcloud once and provides modules for individual Nextcloud apps (starting with Cookbook).",
 	"author": "Nico De Luca",

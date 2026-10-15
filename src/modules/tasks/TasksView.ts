@@ -4,7 +4,7 @@ import { errorMessage } from "../../core/NextcloudClient";
 import { confirmModal } from "../../core/ui";
 import { formatDue, isOverdue, priorityBucket, TaskModal } from "./TaskModal";
 import { TasksApi } from "./TasksApi";
-import { createTaskIcs, setCompletedIcs, Task, TaskDraft, updateTaskIcs } from "./vtodo";
+import { completeRecurringIcs, createTaskIcs, RuleChoice, setCompletedIcs, Task, TaskDraft, updateTaskIcs } from "./vtodo";
 
 export const TASKS_VIEW = "nextcloud-tasks";
 
@@ -208,23 +208,25 @@ export class TasksView extends ItemView {
 
 		row.addEventListener("click", () =>
 			new TaskModal(this.app, task, {
-				save: (draft) => this.saveTask(task, draft),
+				save: (draft, rule) => this.saveTask(task, draft, rule),
 				delete: () => this.deleteTask(task),
 			}).open()
 		);
 	}
 
 	private async setCompleted(task: Task, checkbox: HTMLInputElement) {
-		if (task.recurring) {
-			checkbox.checked = task.completed;
-			new Notice("Recurring tasks can't be completed here yet.");
-			return;
-		}
 		checkbox.disabled = true;
 		try {
-			// Completion only touches the status, so it is applied to the latest version even if the task changed elsewhere.
+			// Completion only touches the status (or the due date of a repeating task), so it is
+			// applied to the latest version even if the task changed elsewhere.
 			const source = await this.api.getSource(task.path);
-			await this.api.save(task.path, setCompletedIcs(source.ics, checkbox.checked), source.etag);
+			if (task.recurring && checkbox.checked) {
+				const { ics, nextDue } = completeRecurringIcs(source.ics);
+				await this.api.save(task.path, ics, source.etag);
+				new Notice(nextDue ? `Done. Next: ${formatDue({ due: nextDue, dueAllDay: task.dueAllDay })}` : "Done. The series has ended.");
+			} else {
+				await this.api.save(task.path, setCompletedIcs(source.ics, checkbox.checked), source.etag);
+			}
 		} catch (e) {
 			checkbox.checked = task.completed;
 			new Notice(`Could not update task: ${errorMessage(e)}`, 8000);
@@ -244,7 +246,7 @@ export class TasksView extends ItemView {
 		this.loadTasks();
 	}
 
-	private async saveTask(task: Task, draft: TaskDraft) {
+	private async saveTask(task: Task, draft: TaskDraft, rule: RuleChoice) {
 		const source = await this.api.getSource(task.path);
 		if (source.etag !== task.etag) {
 			const overwrite = await confirmModal(
@@ -255,7 +257,7 @@ export class TasksView extends ItemView {
 			);
 			if (!overwrite) throw new Error("cancelled because the task changed elsewhere");
 		}
-		await this.api.save(task.path, updateTaskIcs(source.ics, draft, task), source.etag);
+		await this.api.save(task.path, updateTaskIcs(source.ics, draft, task, rule), source.etag);
 		new Notice("Task saved.");
 		this.loadTasks();
 	}

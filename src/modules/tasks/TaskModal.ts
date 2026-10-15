@@ -1,20 +1,24 @@
 import { App, ButtonComponent, Modal, moment, Notice, Setting } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
-import { Task, TaskDraft } from "./vtodo";
+import { describeRecurrence } from "../../core/recurrence";
+import { renderRecurrenceSetting } from "../../core/RecurrenceSetting";
+import { RuleChoice, Task, TaskDraft } from "./vtodo";
 
 export const PRIORITIES: Record<string, string> = { "0": "None", "1": "High", "5": "Medium", "9": "Low" };
 
-/** Details of a task; editable unless it is recurring or in a read-only list. */
+/** Details of a task; editable unless it is in a read-only list. */
 export class TaskModal extends Modal {
 	private draft: TaskDraft;
+	private rule: RuleChoice;
 
 	constructor(
 		app: App,
 		private task: Task,
-		private actions: { save: (draft: TaskDraft) => Promise<void>; delete: () => void }
+		private actions: { save: (draft: TaskDraft, rule: RuleChoice) => Promise<void>; delete: () => void }
 	) {
 		super(app);
 		this.draft = { title: task.title, notes: task.notes, due: task.due, dueAllDay: task.dueAllDay, priority: priorityBucket(task.priority) };
+		this.rule = task.rule;
 	}
 
 	onOpen() {
@@ -24,12 +28,12 @@ export class TaskModal extends Modal {
 		listEl.createSpan({ cls: "nc-cal-dot" }).style.background = task.list.color;
 		listEl.createSpan({ text: task.list.name });
 
-		if (task.list.readOnly || task.recurring) {
+		if (task.list.readOnly) {
 			this.titleEl.setText(task.title || "(No title)");
 			if (task.due) contentEl.createEl("p", { text: `Due: ${formatDue(task)}` });
+			if (task.rule) contentEl.createEl("p", { text: `↻ ${describeRecurrence(task.rule)}` });
 			if (task.notes) contentEl.createEl("p", { text: task.notes, cls: "nc-cal-detail-description" });
-			const hint = task.recurring ? "Recurring tasks can't be edited here yet." : "This list is read-only.";
-			contentEl.createEl("p", { text: hint, cls: "nc-cal-hint" });
+			contentEl.createEl("p", { text: "This list is read-only.", cls: "nc-cal-hint" });
 			return;
 		}
 
@@ -67,6 +71,8 @@ export class TaskModal extends Modal {
 				})
 		);
 
+		renderRecurrenceSetting(contentEl, this.rule, () => draft.due ?? new Date(), (rule) => (this.rule = rule));
+
 		new Setting(contentEl).setName("Priority").addDropdown((d) =>
 			d
 				.addOptions(PRIORITIES)
@@ -99,11 +105,15 @@ export class TaskModal extends Modal {
 							new Notice("Please enter a title.");
 							return;
 						}
+						if (this.rule && !draft.due) {
+							new Notice("A repeating task needs a due date.");
+							return;
+						}
 						saveButton.setDisabled(true);
 						try {
 							// Keep an in-between priority (e.g. 3) unless a different choice was made.
 							const priority = draft.priority === priorityBucket(task.priority) ? task.priority : draft.priority;
-							await this.actions.save({ ...draft, title: draft.title.trim(), priority });
+							await this.actions.save({ ...draft, title: draft.title.trim(), priority }, this.rule);
 							this.close();
 						} catch (e) {
 							new Notice(`Could not save task: ${errorMessage(e)}`, 8000);
