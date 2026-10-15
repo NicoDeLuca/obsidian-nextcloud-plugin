@@ -8,6 +8,7 @@ import { cookbookModule } from "./modules/cookbook";
 import { deckModule } from "./modules/deck";
 import { syncModule } from "./modules/sync";
 import { tasksModule } from "./modules/tasks";
+import { zeiterfassungModule } from "./modules/zeiterfassung";
 import { NextcloudSettingTab } from "./settings";
 
 export default class NextcloudPlugin extends Plugin {
@@ -18,7 +19,7 @@ export default class NextcloudPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.client = new NextcloudClient(() => this.settings);
-		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule, deckModule, activityModule, syncModule]);
+		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule, deckModule, activityModule, syncModule, zeiterfassungModule]);
 		this.registry.loadEnabled();
 		this.addSettingTab(new NextcloudSettingTab(this.app, this));
 	}

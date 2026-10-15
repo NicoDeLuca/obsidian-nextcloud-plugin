@@ -47,7 +47,7 @@ export class NextcloudClient {
 
 	/**
 	 * Any request to a path relative to the Nextcloud base URL, e.g. WebDAV/CalDAV
-	 * methods like PROPFIND or REPORT. Throws on HTTP >= 400.
+	 * methods like PROPFIND or REPORT. Throws on HTTP >= 400 (unless `throw: false`).
 	 */
 	async request(method: string, path: string, options: RequestOptions = {}): Promise<RequestUrlResponse> {
 		if (!this.isConfigured) {
@@ -66,6 +66,7 @@ export class NextcloudClient {
 			method,
 			headers,
 			body: options.body,
+			throw: options.throw,
 		});
 	}
 
@@ -81,6 +82,8 @@ export interface RequestOptions {
 	contentType?: string;
 	/** Extra headers; these override the defaults (e.g. Accept). */
 	headers?: Record<string, string>;
+	/** false: return responses with HTTP >= 400 instead of throwing, e.g. to read an error message from the body. */
+	throw?: boolean;
 }
 
 /** Short, user-facing description of a failed request. */

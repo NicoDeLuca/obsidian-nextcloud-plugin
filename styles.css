@@ -671,3 +671,54 @@ input.nc-recurrence-number {
 .nc-module-settings .mod-warning {
 	color: var(--text-error);
 }
+
+/* Zeiterfassung */
+.nc-time h4 {
+	margin: 0 0 var(--size-4-2);
+}
+
+.nc-time-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: var(--size-4-2);
+}
+
+.nc-time-table td {
+	padding: var(--size-2-2) 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nc-time-table td:last-child {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.nc-time-plus {
+	color: var(--color-green);
+}
+
+.nc-time-minus {
+	color: var(--color-red);
+}
+
+.nc-time-muted {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.nc-time-warning {
+	color: var(--text-on-accent);
+	background: var(--color-red);
+	border-radius: var(--radius-s);
+	padding: var(--size-4-2);
+	margin-bottom: var(--size-4-2);
+	font-weight: var(--font-semibold);
+}
+
+.nc-time-status {
+	font-variant-numeric: tabular-nums;
+}
+
+.nc-time-status.nc-time-over {
+	color: var(--color-red);
+}

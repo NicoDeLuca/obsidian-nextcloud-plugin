@@ -23,6 +23,10 @@ desktop), archive and delete them.
 **File sync module:** syncs the whole vault with a folder in your Nextcloud files,
 at startup and periodically in the background (a replacement for Remotely Save).
 
+**Zeiterfassung module:** timer (start, pause, resume, stop) with a running time in
+the status bar, the current week's actual/target hours and balance, and adding past
+entries, for the custom Nextcloud app [Zeiterfassung](https://github.com/NicoDeLuca/Zeiterfassung).
+
 The user interface is in German.
 
 ## Installation
@@ -41,6 +45,10 @@ pushes without a version bump are skipped.
 2. In Obsidian, open *Settings → Nextcloud* and enter the URL (e.g. `https://cloud.example.de`),
    username and app password. Use **Testen** to check the connection.
 3. Open recipes from the ribbon (chef hat) or the command *Nextcloud: Kochbuch-Rezepte öffnen*.
+
+The app password is stored unencrypted in this plugin's `data.json` inside the vault's
+`.obsidian` folder. Don't put the `.obsidian` folder into a public Git repository or a
+sync service you don't trust. (The file sync module never uploads this plugin's folder.)
 
 The checkbox state is never saved: it resets whenever a recipe is opened again.
 
@@ -154,6 +162,27 @@ remote folder here. The first sync compares the files on both sides (downloading
 them once to compare their content); identical files are just recorded, differing ones
 become conflict copies. Try it with a test vault and a separate test folder first.
 
+### Zeiterfassung
+
+Needs the Nextcloud app *Zeiterfassung* (API as in its `docs/API.md`, app version 1.1.0).
+The module is off by default; switch it on in the settings. It uses the connection above.
+
+- **Timer:** commands *Zeiterfassung: Start*, *Pause*, *Weiter* and *Stop*. On desktop the
+  status bar shows `⏱ 1:23` (running) or `⏸ 1:23` (paused), red above the weekly limit;
+  clicking it starts, pauses or resumes. The timer lives on the server, so the state is
+  loaded at startup and every 60 seconds (it may have been changed on the phone or in the
+  browser) and counted up locally in between. If another device was faster, the server's
+  message is shown and the state reloaded.
+- **Diese Woche:** sidebar view (ribbon: timer icon, or *Zeiterfassung: Diese Woche öffnen*)
+  with actual, target, difference, weekly limit and balance. Like the app's web interface,
+  actual and balance include the running timer. A red warning appears above the limit.
+- **Eintrag nachtragen:** date, start, end and break in minutes. An end before the start
+  counts as the next day.
+- **Wochenzusammenfassung einfügen** (in the editor): inserts e.g.
+  `KW 42: 31:30 h von 20:00 h (+11:30 h), Saldo +4:15 h` at the cursor.
+
+Settings, weekly targets, deleting entries and the CSV export stay in the Nextcloud app.
+
 ## Architecture
 
 ```
@@ -172,7 +201,8 @@ src/
     ├── tasks/
     ├── deck/
     ├── activity/
-    └── sync/                # vault sync over WebDAV
+    ├── sync/                # vault sync over WebDAV
+    └── zeiterfassung/       # custom app "Zeiterfassung" (JSON API)
 ```
 
 A module implements `NextcloudModule` and registers its views, commands, ribbon
