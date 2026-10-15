@@ -4,6 +4,7 @@ import { NextcloudClient } from "./core/NextcloudClient";
 import { DEFAULT_SETTINGS, NextcloudSettings } from "./core/types";
 import { calendarModule } from "./modules/calendar";
 import { cookbookModule } from "./modules/cookbook";
+import { deckModule } from "./modules/deck";
 import { tasksModule } from "./modules/tasks";
 import { NextcloudSettingTab } from "./settings";
 
@@ -15,7 +16,7 @@ export default class NextcloudPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.client = new NextcloudClient(() => this.settings);
-		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule]);
+		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule, deckModule]);
 		this.registry.loadEnabled();
 		this.addSettingTab(new NextcloudSettingTab(this.app, this));
 	}
