@@ -433,3 +433,123 @@
 .nc-tasks button.is-active {
 	color: var(--text-accent);
 }
+
+/* Deck */
+.nc-deck {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	padding: 0;
+}
+
+.nc-deck-body {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.nc-deck-columns {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	gap: var(--size-4-3);
+	padding: var(--size-4-3);
+	overflow-x: auto;
+	align-items: flex-start;
+	border-top: 3px solid var(--nc-deck-board, var(--interactive-accent));
+}
+
+.nc-deck-stack {
+	flex: 0 0 280px;
+	max-height: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.nc-deck-stack-head {
+	display: flex;
+	justify-content: space-between;
+	font-weight: var(--font-semibold);
+	padding: 0 var(--size-4-1);
+}
+
+.nc-deck-stack-count {
+	color: var(--text-muted);
+	font-weight: normal;
+}
+
+.nc-deck-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	overflow-y: auto;
+	min-height: 24px;
+	border-radius: var(--radius-s);
+}
+
+.nc-deck-cards.is-drop-target {
+	outline: 2px dashed var(--interactive-accent);
+}
+
+.nc-deck-card {
+	padding: var(--size-4-2);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+}
+
+.nc-deck-card:hover {
+	border-color: var(--interactive-accent);
+}
+
+.nc-deck-card.is-dragging {
+	opacity: 0.4;
+}
+
+.nc-deck-card.is-done .nc-deck-card-title {
+	text-decoration: line-through;
+	color: var(--text-faint);
+}
+
+.nc-deck-card-title {
+	overflow-wrap: anywhere;
+}
+
+.nc-deck-done {
+	color: var(--color-green);
+}
+
+.nc-deck-labels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 4px;
+}
+
+.nc-deck-label {
+	--nc-deck-label: var(--interactive-accent);
+	font-size: var(--font-ui-smaller);
+	padding: 0 6px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--nc-deck-label) 25%, var(--background-primary));
+	border: 1px solid var(--nc-deck-label);
+}
+
+.nc-deck-labels.is-editable .nc-deck-label {
+	cursor: pointer;
+}
+
+.nc-deck-label.is-off {
+	opacity: 0.35;
+}
+
+.nc-deck-add {
+	box-sizing: border-box;
+	width: 100%;
+}

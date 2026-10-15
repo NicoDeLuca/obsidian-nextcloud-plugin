@@ -13,6 +13,10 @@ calendars (CalDAV), show/hide calendars, and creating, editing and deleting even
 **Tasks module:** your Nextcloud Tasks lists (CalDAV) with a "Today" view,
 subtasks, quick add, checking off, and editing due date, priority and notes.
 
+**Deck module:** your Nextcloud Deck boards as Kanban columns; add cards, edit
+title, description, due date, done state and labels, move cards (drag and drop on
+desktop), archive and delete them.
+
 File sync is intentionally out of scope; use Remotely Sync for that.
 
 ## Installation
@@ -86,6 +90,13 @@ press Enter to add a task (in *Today* it is due today). Tick a task to complete 
 click it to edit or delete it. The double-check button shows completed tasks.
 Recurring tasks are shown but can't be completed or edited yet.
 
+### Deck
+
+Open it from the ribbon (Kanban icon) or the command *Nextcloud: Open Deck* and pick
+a board at the top. Type into "Add a card…" under a list and press Enter to add a
+card. Click a card to edit it; *List* moves it to another list (on desktop you can
+also drag cards). Assigning people and managing lists or boards is not supported yet.
+
 ## Architecture
 
 ```
@@ -100,7 +111,8 @@ src/
 └── modules/
     ├── cookbook/            # one folder per Nextcloud app
     ├── calendar/
-    └── tasks/
+    ├── tasks/
+    └── deck/
 ```
 
 A module implements `NextcloudModule` and registers its views, commands and ribbon
