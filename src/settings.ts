@@ -65,10 +65,13 @@ export class NextcloudSettingTab extends PluginSettingTab {
 				.setName(module.name)
 				.setDesc(module.description)
 				.addToggle((toggle) =>
-					toggle
-						.setValue(this.plugin.registry.isEnabled(module.id))
-						.onChange((value) => this.plugin.registry.setEnabled(module.id, value))
+					toggle.setValue(this.plugin.registry.isEnabled(module.id)).onChange(async (value) => {
+						await this.plugin.registry.setEnabled(module.id, value);
+						this.display(); // show or hide the module's own settings
+					})
 				);
+			const moduleSettings = containerEl.createDiv({ cls: "nc-module-settings" });
+			this.plugin.registry.renderSettings(module, moduleSettings);
 		}
 	}
 }

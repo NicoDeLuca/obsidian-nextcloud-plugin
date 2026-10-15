@@ -660,3 +660,14 @@ input.nc-recurrence-number {
 	background: var(--background-secondary);
 	border: 1px solid var(--interactive-accent);
 }
+
+/* Module settings below their toggle */
+.nc-module-settings:not(:empty) {
+	padding-left: var(--size-4-4);
+	border-left: 2px solid var(--background-modifier-border);
+	margin-bottom: var(--size-4-4);
+}
+
+.nc-module-settings .mod-warning {
+	color: var(--text-error);
+}
