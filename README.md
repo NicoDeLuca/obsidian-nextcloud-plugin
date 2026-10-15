@@ -27,6 +27,10 @@ at startup and periodically in the background (a replacement for Remotely Save).
 the status bar, the current week's actual/target hours and balance, and adding past
 entries, for the custom Nextcloud app [Zeiterfassung](https://github.com/NicoDeLuca/Zeiterfassung).
 
+**Blocks in notes:** each module can be placed into any note as a code block (tasks,
+agenda, timer, Deck lists, activity, a recipe), so you can build your own dashboard,
+also together with layout plugins. Scripts (DataviewJS, Templater) get a JavaScript API.
+
 The user interface is in German.
 
 ## Installation
@@ -183,6 +187,101 @@ The module is off by default; switch it on in the settings. It uses the connecti
 
 Settings, weekly targets, deleting entries and the CSV export stay in the Nextcloud app.
 
+## Blocks in notes
+
+Put a code block like this into any note (reading view and Live Preview). The
+command *Nextcloud: Nextcloud-Block einfügen* inserts one with example options.
+
+````markdown
+```nextcloud-aufgaben
+ansicht: heute
+```
+````
+
+Options are written as `name: wert`, one per line; all are optional unless noted.
+Names may be written with or without umlauts (`hinzufügen` / `hinzufuegen`); lists can
+be YAML lists or comma-separated (`liste: Einkauf, Arbeit`); yes/no is `ja`/`nein`.
+Every block accepts `titel:` (an empty value hides the title). Wrong options show a message
+inside the block. Blocks reload every 5 minutes and with their refresh button; a block of
+a module that is switched off shows a hint instead.
+
+| Block | Options | What you can do in it |
+|---|---|---|
+| `nextcloud-aufgaben` | `ansicht: heute \| alle` (default `heute`, with `liste` `alle`), `liste:` one or more list names, `erledigte: nein`, `max:` top-level tasks (0 = all), `hinzufuegen: ja` | tick tasks (repeating ones move on), click to edit, add with the field below |
+| `nextcloud-kalender` | `tage: 7` (from today; 1 = today), `kalender:` names (default: the ones shown in the calendar view), `vergangene: nein` (today's past events), `max:`, `hinzufuegen: ja` | click an event to see, edit or delete it; **+** creates one |
+| `nextcloud-zeiterfassung` | `anzeige: beides \| timer \| woche` | Start / Pause / Weiter / Stop, the week's actual/target/balance |
+| `nextcloud-deck` | `board:` name (default: the first), `liste:` list names (default: all), `erledigte: ja`, `max:` cards per list, `hinzufuegen: ja` | click a card to edit, move (via *Liste*), archive or delete it; add cards |
+| `nextcloud-aktivitaet` | `filter:` name or id of an activity filter (e.g. `Dateien`), `max: 10` | click an entry to open it in Nextcloud |
+| `nextcloud-rezept` | `rezept:` name, beginning of the name, or id (**required**), `bild: ja` | tick ingredients and steps (not saved, not reloaded automatically); the chef hat opens it in the cookbook view |
+
+Names (lists, calendars, boards, recipes) are matched ignoring case, first exactly,
+then by their beginning.
+
+Example dashboard, e.g. with a two-column layout plugin:
+
+````markdown
+```nextcloud-zeiterfassung
+anzeige: timer
+```
+
+```nextcloud-kalender
+tage: 3
+kalender: Persönlich, Arbeit
+```
+
+```nextcloud-aufgaben
+liste: Einkauf
+titel: Einkaufsliste
+```
+
+```nextcloud-deck
+board: Projekte
+liste: In Arbeit
+```
+````
+
+## JavaScript API (DataviewJS, Templater)
+
+```js
+const nc = app.plugins.plugins["obsidian-nextcloud-plugin"].api;
+```
+
+Only switched-on modules are present (e.g. `nc.tasks` is `undefined` while *Aufgaben* is off).
+All functions are `async`; names are matched like in blocks; durations are in seconds.
+
+| | |
+|---|---|
+| `nc.render(el, block, options?, component?)` | draws a block (`"aufgaben"` or `"nextcloud-aufgaben"`) into `el`; `options` as object or YAML text. Pass the caller's component (DataviewJS: `dv.component`) so it stops updating when the note closes. |
+| `nc.calendar.calendars()` / `nc.calendar.events({ from, to, days, calendars })` | events with `title, start, end, allDay, location, description, recurring, calendar`; default today + 7 days |
+| `nc.tasks.lists()` / `nc.tasks.tasks({ lists, today, completed })` | tasks with `uid, title, notes, due, dueAllDay, priority, completed, recurring, parentUid, list` |
+| `nc.tasks.add(title, { list, due })` | adds a task; `due` as `"YYYY-MM-DD"` (all day) or a `Date` |
+| `nc.timeTracking.state()` / `.summary()` | timer and week (incl. the running timer); `summary()` gives `KW 42: 31:30 h von 20:00 h (+11:30 h), Saldo +4:15 h` |
+| `nc.timeTracking.start()` / `.pause()` / `.resume()` / `.stop()` | throw with the server's message if not possible |
+| `nc.deck.boards()` / `nc.deck.cards({ board, lists })` | cards with `title, description, list, board, due, done, labels, assignees` |
+| `nc.activity.filters()` / `nc.activity.activities({ filter, limit })` | entries with `date, subject, message, link` |
+| `nc.cookbook.recipes()` / `nc.cookbook.recipe(nameOrId)` | |
+
+DataviewJS:
+
+````markdown
+```dataviewjs
+const nc = app.plugins.plugins["obsidian-nextcloud-plugin"].api;
+const tasks = await nc.tasks.tasks({ today: true });
+dv.list(tasks.map((t) => `${t.title} (${t.list})`));
+nc.render(dv.container, "kalender", { tage: 1 }, dv.component);
+```
+````
+
+Templater (e.g. in a daily note template):
+
+```
+<%* const nc = app.plugins.plugins["obsidian-nextcloud-plugin"].api; %>
+<% await nc.timeTracking.summary() %>
+<%* for (const e of await nc.calendar.events({ days: 1 })) { %>
+- <% moment(e.start).format("HH:mm") %> <% e.title %>
+<%* } %>
+```
+
 ## Architecture
 
 ```
@@ -193,6 +292,7 @@ src/
 │   ├── NextcloudClient.ts   # requestUrl + Basic Auth; the only code that talks to Nextcloud
 │   ├── ModuleRegistry.ts    # loads/unloads modules based on the toggles
 │   ├── CalDav.ts            # CalDAV access shared by calendar and tasks
+│   ├── blocks.ts            # note blocks: options, frame, insert command
 │   ├── recurrence.ts        # repeat rules (RRULE) + the shared "Repeat" form settings
 │   └── types.ts
 └── modules/
@@ -206,8 +306,9 @@ src/
 ```
 
 A module implements `NextcloudModule` and registers its views, commands, ribbon
-icons and status bar items through the `ModuleContext` it receives; it can add its own
-settings below its toggle (`renderSettings`). Everything registered that way is
+icons, status bar items, note blocks (`registerBlock`, see `core/blocks.ts`) and script
+API (`exposeApi`) through the `ModuleContext` it receives; it can add its own settings
+below its toggle (`renderSettings`). Everything registered that way is
 removed again when the module is switched off. To add a module, create a folder
 under `src/modules/` and add it to the list in `src/main.ts`.
 

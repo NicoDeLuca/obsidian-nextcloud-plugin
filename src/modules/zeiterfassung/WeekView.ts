@@ -57,39 +57,44 @@ export class WeekView extends ItemView {
 	private render() {
 		const el = this.contentEl;
 		el.empty();
-		const state = this.tracker.state;
-		if (!state) {
-			el.createEl("p", { cls: "nc-cookbook-status", text: this.tracker.error ? `Konnte nicht geladen werden: ${this.tracker.error}` : "Wird geladen …" });
-			return;
-		}
-		const { week, timer } = state;
-		const work = this.tracker.workSeconds();
-		const f = weekFigures(week, work);
-
-		el.createEl("h4", { text: `KW ${week.isoWeek} · ${moment(week.start).format("DD.MM.")}–${moment(week.end).format("DD.MM.YYYY")}` });
-		if (f.overLimit) {
-			el.createDiv({ cls: "nc-time-warning", text: `Wochenlimit überschritten: ${hm(f.actual)} h – das Limit liegt bei ${hm(week.limit)} h.` });
-		}
-
-		const table = el.createEl("table", { cls: "nc-time-table" });
-		const row = (label: string, value: string, cls = "") => {
-			const tr = table.createEl("tr");
-			tr.createEl("td", { text: label });
-			tr.createEl("td", { text: value, cls });
-		};
-		const sign = (seconds: number) => (seconds < 0 ? "nc-time-minus" : "nc-time-plus");
-		row("Ist", `${hm(f.actual)} h`);
-		row("Soll", `${hm(f.target)} h${week.override?.note ? ` (${week.override.note})` : ""}`);
-		row("Differenz", `${diff(f.diff)} h`, sign(f.diff));
-		row("Wochenlimit", `${hm(week.limit)} h`);
-		if (f.balance === null) row("Saldo", "Startdatum fehlt", "nc-time-muted");
-		else row("Saldo", `${diff(f.balance)} h`, sign(f.balance));
-
-		const status = !timer
-			? "Kein Timer aktiv."
-			: `Timer ${timer.paused ? "pausiert" : "läuft"} seit ${moment.unix(timer.paused ? timer.pausedSince! : timer.startedAt).format("HH:mm")}, ${hm(work)} h gearbeitet.`;
-		el.createEl("p", { cls: "nc-time-muted", text: status });
-		if (timer) el.createEl("p", { cls: "nc-time-muted", text: "Der laufende Timer ist in Ist und Saldo enthalten." });
-		if (this.tracker.error) el.createEl("p", { cls: "nc-time-muted", text: `Letzte Aktualisierung fehlgeschlagen: ${this.tracker.error}` });
+		renderWeek(el, this.tracker);
 	}
+}
+
+/** Actual/target/difference/limit/balance of the current week, the timer state, and the limit warning. */
+export function renderWeek(el: HTMLElement, tracker: TimeTracker, showTimer = true) {
+	const state = tracker.state;
+	if (!state) {
+		el.createEl("p", { cls: "nc-cookbook-status", text: tracker.error ? `Konnte nicht geladen werden: ${tracker.error}` : "Wird geladen …" });
+		return;
+	}
+	const { week, timer } = state;
+	const work = tracker.workSeconds();
+	const f = weekFigures(week, work);
+
+	el.createEl("h4", { text: `KW ${week.isoWeek} · ${moment(week.start).format("DD.MM.")}–${moment(week.end).format("DD.MM.YYYY")}` });
+	if (f.overLimit) {
+		el.createDiv({ cls: "nc-time-warning", text: `Wochenlimit überschritten: ${hm(f.actual)} h – das Limit liegt bei ${hm(week.limit)} h.` });
+	}
+
+	const table = el.createEl("table", { cls: "nc-time-table" });
+	const row = (label: string, value: string, cls = "") => {
+		const tr = table.createEl("tr");
+		tr.createEl("td", { text: label });
+		tr.createEl("td", { text: value, cls });
+	};
+	const sign = (seconds: number) => (seconds < 0 ? "nc-time-minus" : "nc-time-plus");
+	row("Ist", `${hm(f.actual)} h`);
+	row("Soll", `${hm(f.target)} h${week.override?.note ? ` (${week.override.note})` : ""}`);
+	row("Differenz", `${diff(f.diff)} h`, sign(f.diff));
+	row("Wochenlimit", `${hm(week.limit)} h`);
+	if (f.balance === null) row("Saldo", "Startdatum fehlt", "nc-time-muted");
+	else row("Saldo", `${diff(f.balance)} h`, sign(f.balance));
+
+	const status = !timer
+		? "Kein Timer aktiv."
+		: `Timer ${timer.paused ? "pausiert" : "läuft"} seit ${moment.unix(timer.paused ? timer.pausedSince! : timer.startedAt).format("HH:mm")}, ${hm(work)} h gearbeitet.`;
+	if (showTimer) el.createEl("p", { cls: "nc-time-muted", text: status });
+	if (timer) el.createEl("p", { cls: "nc-time-muted", text: "Der laufende Timer ist in Ist und Saldo enthalten." });
+	if (tracker.error) el.createEl("p", { cls: "nc-time-muted", text: `Letzte Aktualisierung fehlgeschlagen: ${tracker.error}` });
 }

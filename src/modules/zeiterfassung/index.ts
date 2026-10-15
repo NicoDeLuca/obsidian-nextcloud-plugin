@@ -1,6 +1,8 @@
 import { App } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { timeTrackingApi } from "./api";
 import { EntryModal } from "./EntryModal";
+import { timeBlock } from "./TimeBlock";
 import { TimeTracker } from "./TimeTracker";
 import { WEEK_VIEW, weekFigures, weekSummary, WeekView } from "./WeekView";
 import { ZeiterfassungApi } from "./ZeiterfassungApi";
@@ -37,6 +39,9 @@ export const zeiterfassungModule: NextcloudModule = {
 				if (tracker.state && !tracker.error) editor.replaceSelection(weekSummary(tracker.state.week, tracker.workSeconds()));
 			},
 		});
+
+		ctx.registerBlock(timeBlock(tracker));
+		ctx.exposeApi("timeTracking", timeTrackingApi(tracker));
 
 		// Status bar (desktop): "⏱ 1:23" while running, "⏸ 1:23" while paused; a click starts, pauses or resumes.
 		const statusEl = ctx.addStatusBarItem();

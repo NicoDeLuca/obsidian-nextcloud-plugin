@@ -1,8 +1,7 @@
-import { ButtonComponent, DropdownComponent, ItemView, Notice, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, DropdownComponent, ItemView, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
-import { confirmModal } from "../../core/ui";
-import { CardEdit, CardModal, formatDue, renderLabels } from "./CardModal";
 import { DeckApi, DeckBoard, DeckCard, DeckStack } from "./DeckApi";
+import { DeckActions, renderAddCard, renderCard } from "./DeckBoard";
 
 export const DECK_VIEW = "nextcloud-deck";
 
@@ -19,9 +18,13 @@ export class DeckView extends ItemView {
 	private dragged: DeckCard | null = null;
 	private toolbarEl!: HTMLElement;
 	private bodyEl!: HTMLElement;
+	private actions: DeckActions;
+	/** List whose "add card" field had the focus, to restore it after the redraw. */
+	private addingTo: number | null = null;
 
 	constructor(leaf: WorkspaceLeaf, private api: DeckApi) {
 		super(leaf);
+		this.actions = new DeckActions(this.app, api, () => ({ board: this.board!, stacks: this.stacks }), () => this.loadBoard());
 	}
 
 	getViewType() {
@@ -144,37 +147,25 @@ export class DeckView extends ItemView {
 					const rect = el.getBoundingClientRect();
 					return evt.clientY < rect.top + rect.height / 2;
 				});
-				this.moveCard(card, stack.id, index === -1 ? others.length : index);
+				this.actions.move(card, stack.id, index === -1 ? others.length : index);
 			});
 		}
 
 		if (board.canEdit) {
-			const add = column.createEl("input", {
-				type: "text",
-				cls: "nc-deck-add",
-				attr: { placeholder: "Karte hinzufügen …", enterkeyhint: "done" },
+			const add = renderAddCard(column, stack, this.actions);
+			add.addEventListener("keydown", (evt) => {
+				if (evt.key === "Enter") this.addingTo = stack.id;
 			});
-			add.addEventListener("keydown", async (evt) => {
-				if (evt.key !== "Enter" || evt.isComposing || !add.value.trim()) return;
-				const title = add.value.trim();
-				add.value = "";
-				try {
-					await this.api.createCard(board.id, stack.id, title, stack.cards.length);
-				} catch (e) {
-					new Notice(`Karte konnte nicht angelegt werden: ${errorMessage(e)}`, 8000);
-				}
-				await this.loadBoard();
-				// Keep typing in the same list after the redraw.
-				const index = this.stacks.findIndex((s) => s.id === stack.id);
-				this.bodyEl.querySelectorAll<HTMLInputElement>(".nc-deck-add")[index]?.focus();
-			});
+			// Keep typing in the same list after the redraw.
+			if (this.addingTo === stack.id) {
+				this.addingTo = null;
+				window.setTimeout(() => add.focus());
+			}
 		}
 	}
 
 	private renderCard(parent: HTMLElement, board: DeckBoard, card: DeckCard) {
-		const el = parent.createDiv({ cls: "nc-deck-card" });
-		el.dataset.cardId = String(card.id);
-		el.toggleClass("is-done", !!card.done);
+		const el = renderCard(parent, card, this.actions);
 		if (board.canEdit && !Platform.isMobile) {
 			el.draggable = true;
 			el.addEventListener("dragstart", (evt) => {
@@ -187,82 +178,5 @@ export class DeckView extends ItemView {
 				this.dragged = null;
 			});
 		}
-
-		renderLabels(el, card.labels);
-		el.createDiv({ cls: "nc-deck-card-title", text: card.title });
-		const meta = el.createDiv({ cls: "nc-task-meta" });
-		if (card.done) meta.createSpan({ text: "✓ Erledigt", cls: "nc-deck-done" });
-		if (card.duedate) {
-			const overdue = !card.done && card.duedate.getTime() < Date.now();
-			meta.createSpan({ text: formatDue(card.duedate), cls: overdue ? "nc-task-due is-overdue" : "nc-task-due" });
-		}
-		if (card.description) meta.createSpan({ text: "¶", attr: { title: "Hat eine Beschreibung" } });
-		if (card.assignees.length) meta.createSpan({ text: card.assignees.join(", "), cls: "nc-deck-assignees" });
-
-		el.addEventListener("click", () =>
-			new CardModal(this.app, board, this.stacks, card, {
-				save: (edit) => this.saveCard(card, edit),
-				archive: () => this.archiveCard(card),
-				delete: () => this.deleteCard(card),
-			}).open()
-		);
-	}
-
-	private async moveCard(card: DeckCard, stackId: number, order: number) {
-		try {
-			await this.api.moveCard(this.board!.id, card, stackId, order);
-		} catch (e) {
-			new Notice(`Karte konnte nicht verschoben werden: ${errorMessage(e)}`, 8000);
-		}
-		this.loadBoard();
-	}
-
-	private async saveCard(card: DeckCard, edit: CardEdit) {
-		const boardId = this.board!.id;
-		// Deck has no ETags for writes; compare the modification time instead.
-		const current = await this.api.getCard(boardId, card.stackId, card.id);
-		if (current.lastModified !== card.lastModified) {
-			const overwrite = await confirmModal(
-				this.app,
-				"Karte wurde woanders geändert",
-				"Diese Karte wurde woanders geändert, nachdem das Board geladen wurde. Speichern überschreibt diese Änderungen.",
-				"Überschreiben"
-			);
-			if (!overwrite) throw new Error("abgebrochen, weil die Karte woanders geändert wurde");
-		}
-		await this.api.updateCard(boardId, current, edit.changes);
-		const before = new Set(current.labels.map((l) => l.id));
-		for (const label of this.board!.labels) {
-			const wanted = edit.labelIds.has(label.id);
-			if (wanted !== before.has(label.id)) await this.api.setLabel(boardId, current, label.id, wanted);
-		}
-		if (edit.stackId !== current.stackId) {
-			const target = this.stacks.find((s) => s.id === edit.stackId);
-			await this.api.moveCard(boardId, current, edit.stackId, target?.cards.length ?? 0);
-		}
-		new Notice("Karte gespeichert.");
-		this.loadBoard();
-	}
-
-	private async archiveCard(card: DeckCard) {
-		try {
-			await this.api.archiveCard(this.board!.id, card);
-			new Notice("Karte archiviert.");
-		} catch (e) {
-			new Notice(`Karte konnte nicht archiviert werden: ${errorMessage(e)}`, 8000);
-		}
-		this.loadBoard();
-	}
-
-	private async deleteCard(card: DeckCard) {
-		const confirmed = await confirmModal(this.app, "Karte löschen", `"${card.title}" löschen?`, "Löschen");
-		if (!confirmed) return;
-		try {
-			await this.api.deleteCard(this.board!.id, card);
-			new Notice("Karte gelöscht.");
-		} catch (e) {
-			new Notice(`Karte konnte nicht gelöscht werden: ${errorMessage(e)}`, 8000);
-		}
-		this.loadBoard();
 	}
 }

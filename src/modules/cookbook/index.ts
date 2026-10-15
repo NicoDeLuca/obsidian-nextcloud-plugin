@@ -1,6 +1,8 @@
 import { App, WorkspaceLeaf } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { cookbookApi } from "./api";
 import { CookbookApi } from "./CookbookApi";
+import { recipeBlock } from "./RecipeBlock";
 import { Draft, DraftStore, RECIPE_EDIT_VIEW, RecipeEditView, RecipeEditViewState } from "./RecipeEditView";
 import { RECIPE_LIST_VIEW, RecipeListView } from "./RecipeListView";
 import { RECIPE_VIEW, RecipeView, RecipeViewState } from "./RecipeView";
@@ -54,6 +56,8 @@ export const cookbookModule: NextcloudModule = {
 			name: "Neues Kochbuch-Rezept",
 			callback: () => editRecipe(app.workspace.getLeaf("tab")),
 		});
+		ctx.registerBlock(recipeBlock(api, (id, name) => openRecipe(app, id, name)));
+		ctx.exposeApi("cookbook", cookbookApi(api));
 	},
 };
 

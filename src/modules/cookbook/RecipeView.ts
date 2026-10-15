@@ -83,28 +83,7 @@ export class RecipeView extends ItemView {
 		if (renderId !== this.renderId) return; // another recipe was opened meanwhile
 
 		el.empty();
-
-		const article = el.createDiv({ cls: "nc-recipe" });
-		article.createEl("h1", { text: recipe.name });
-		const imageEl = article.createDiv({ cls: "nc-recipe-image" });
-		if (recipe.description) article.createEl("p", { text: recipe.description, cls: "nc-recipe-description" });
-
-		const meta = [
-			recipe.recipeYield ? `Portionen: ${recipe.recipeYield}` : null,
-			labelled("Vorbereitung", formatDuration(recipe.prepTime)),
-			labelled("Kochzeit", formatDuration(recipe.cookTime)),
-			labelled("Gesamt", formatDuration(recipe.totalTime)),
-		].filter((m): m is string => !!m);
-		if (meta.length) article.createEl("p", { text: meta.join(" · "), cls: "nc-recipe-meta" });
-
-		if (recipe.recipeIngredient.length) {
-			article.createEl("h2", { text: "Zutaten" });
-			renderChecklist(article.createEl("ul", { cls: "nc-recipe-checklist" }), recipe.recipeIngredient);
-		}
-		if (recipe.recipeInstructions.length) {
-			article.createEl("h2", { text: "Zubereitung" });
-			renderChecklist(article.createEl("ol", { cls: "nc-recipe-checklist" }), recipe.recipeInstructions);
-		}
+		const imageEl = renderRecipe(el, recipe);
 
 		try {
 			const blob = await this.api.getImage(this.recipeId, "full");
@@ -120,6 +99,36 @@ export class RecipeView extends ItemView {
 		if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
 		this.imageUrl = null;
 	}
+}
+
+/**
+ * The recipe with temporary checkboxes for ingredients and steps. Returns the (empty) element
+ * for the image, which is loaded separately.
+ */
+export function renderRecipe(el: HTMLElement, recipe: Recipe, headingLevel: 1 | 3 = 1): HTMLElement {
+	const article = el.createDiv({ cls: "nc-recipe" });
+	article.createEl(headingLevel === 1 ? "h1" : "h3", { text: recipe.name });
+	const imageEl = article.createDiv({ cls: "nc-recipe-image" });
+	if (recipe.description) article.createEl("p", { text: recipe.description, cls: "nc-recipe-description" });
+
+	const meta = [
+		recipe.recipeYield ? `Portionen: ${recipe.recipeYield}` : null,
+		labelled("Vorbereitung", formatDuration(recipe.prepTime)),
+		labelled("Kochzeit", formatDuration(recipe.cookTime)),
+		labelled("Gesamt", formatDuration(recipe.totalTime)),
+	].filter((m): m is string => !!m);
+	if (meta.length) article.createEl("p", { text: meta.join(" · "), cls: "nc-recipe-meta" });
+
+	const sub = headingLevel === 1 ? "h2" : "h4";
+	if (recipe.recipeIngredient.length) {
+		article.createEl(sub, { text: "Zutaten" });
+		renderChecklist(article.createEl("ul", { cls: "nc-recipe-checklist" }), recipe.recipeIngredient);
+	}
+	if (recipe.recipeInstructions.length) {
+		article.createEl(sub, { text: "Zubereitung" });
+		renderChecklist(article.createEl("ol", { cls: "nc-recipe-checklist" }), recipe.recipeInstructions);
+	}
+	return imageEl;
 }
 
 function renderChecklist(listEl: HTMLElement, items: string[]) {

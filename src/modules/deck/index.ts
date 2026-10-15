@@ -1,6 +1,8 @@
 import { App } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { deckApi } from "./api";
 import { DeckApi } from "./DeckApi";
+import { deckBlock } from "./DeckBlock";
 import { DECK_VIEW, DeckView } from "./DeckView";
 
 export const deckModule: NextcloudModule = {
@@ -18,6 +20,8 @@ export const deckModule: NextcloudModule = {
 			name: "Deck öffnen",
 			callback: () => openDeck(app),
 		});
+		ctx.registerBlock(deckBlock(api));
+		ctx.exposeApi("deck", deckApi(api));
 	},
 };
 

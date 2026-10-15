@@ -1,4 +1,5 @@
 import type { Command, Plugin, ViewCreator } from "obsidian";
+import type { BlockDefinition } from "./blocks";
 import type { NextcloudClient } from "./NextcloudClient";
 
 export interface NextcloudSettings {
@@ -30,6 +31,10 @@ export interface ModuleContext {
 	addStatusBarItem(): HTMLElement;
 	/** Runs the callback when the module is disabled or the plugin unloads. */
 	register(callback: () => unknown): void;
+	/** A block for notes (```nextcloud-…); while the module is off, the block shows a hint instead. */
+	registerBlock(block: BlockDefinition): void;
+	/** Functions for other plugins and scripts, available as `api.<key>` of this plugin while the module is on. */
+	exposeApi(key: string, api: object): void;
 	/** The data this module saved last time, if any. */
 	loadData<T>(): T | undefined;
 	saveData(data: unknown): Promise<void>;

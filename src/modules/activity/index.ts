@@ -1,5 +1,7 @@
 import { App } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { activityApi } from "./api";
+import { activityBlock } from "./ActivityBlock";
 import { ActivityApi } from "./ActivityApi";
 import { ACTIVITY_VIEW, ActivityView } from "./ActivityView";
 
@@ -18,6 +20,8 @@ export const activityModule: NextcloudModule = {
 			name: "Aktivitäten öffnen",
 			callback: () => openActivity(app),
 		});
+		ctx.registerBlock(activityBlock(api));
+		ctx.exposeApi("activity", activityApi(api));
 	},
 };
 
