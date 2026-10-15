@@ -13,6 +13,11 @@ export class NextcloudClient {
 		return !!(baseUrl && username && appPassword);
 	}
 
+	/** The Nextcloud base URL without trailing slash. */
+	get baseUrl(): string {
+		return this.getSettings().baseUrl.replace(/\/+$/, "");
+	}
+
 	/** GET a path relative to the Nextcloud base URL. Throws on HTTP >= 400. */
 	get(path: string): Promise<RequestUrlResponse> {
 		return this.request("GET", path);
@@ -72,7 +77,7 @@ export class NextcloudClient {
 }
 
 export interface RequestOptions {
-	body?: string;
+	body?: string | ArrayBuffer;
 	contentType?: string;
 	/** Extra headers; these override the defaults (e.g. Accept). */
 	headers?: Record<string, string>;

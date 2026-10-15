@@ -20,8 +20,10 @@ desktop), archive and delete them.
 **Activity module:** the Nextcloud activity feed with the server's filters
 (all, by you, by others, files, calendar, …), grouped by day.
 
-The user interface is in German. File sync is intentionally out of scope; use
-Remotely Sync for that.
+**File sync module:** syncs the whole vault with a folder in your Nextcloud files,
+at startup and periodically in the background (a replacement for Remotely Save).
+
+The user interface is in German.
 
 ## Installation
 
@@ -119,6 +121,39 @@ Open it from the ribbon (activity icon) or the command *Nextcloud: Aktivitäten 
 Pick a filter at the top; **Mehr laden** at the end fetches older entries. Clicking
 an entry opens it in Nextcloud in your browser.
 
+### File sync
+
+The module is off by default. Switch on *Datei-Sync* in the settings and enter the
+*Nextcloud-Ordner* (e.g. `Obsidian/Notizen`; it is created if missing). The vault then
+syncs a few seconds after Obsidian starts, every few minutes (*Automatisch
+synchronisieren*) and from the ribbon (sync icon) or the command *Nextcloud: Dateien
+jetzt synchronisieren*. On desktop the status bar shows the last sync time.
+
+How it decides: each device remembers how every file looked after the last sync (its
+own modification time and size, and the server's ETag). A file changed on one side is
+copied to the other; a file deleted on one side is deleted on the other, but only if
+the other side didn't change it meanwhile (then the changed version is restored).
+Deleted files go to the vault's `.trash` folder or the Nextcloud trash bin.
+
+- **Conflicts:** if a note changed on both devices, both versions are kept: the
+  server's under the original name, yours as `Name (Konflikt <Gerätename> 2026-10-15 1430).md`.
+  In the config folder, the newer version wins instead.
+- **Config folder:** `.obsidian` (plugins, themes, hotkeys, …) is synced too, except
+  `workspace.json`/`workspace-mobile.json` (open tabs), this plugin's own folder (it
+  holds the app password and the device's sync state) and Remotely Save's folder.
+  Switch it off with *Obsidian-Einstellungen mitsynchronisieren*.
+- **Never synced:** `.trash`, `.git`, `node_modules`, `.DS_Store`, and hidden files
+  inside normal folders (Obsidian doesn't see them).
+- **Safety:** a sync that would delete more than 10 files and more than a quarter of
+  all files stops and asks first (automatic syncs show a notice). If the Nextcloud
+  folder disappears, the sync stops instead of deleting the vault. Pointing the module
+  at another folder starts from scratch and never deletes anything on the first run.
+
+Moving from Remotely Save (unencrypted WebDAV): disable Remotely Save, then enter its
+remote folder here. The first sync compares the files on both sides (downloading
+them once to compare their content); identical files are just recorded, differing ones
+become conflict copies. Try it with a test vault and a separate test folder first.
+
 ## Architecture
 
 ```
@@ -136,11 +171,13 @@ src/
     ├── calendar/
     ├── tasks/
     ├── deck/
-    └── activity/
+    ├── activity/
+    └── sync/                # vault sync over WebDAV
 ```
 
-A module implements `NextcloudModule` and registers its views, commands and ribbon
-icons through the `ModuleContext` it receives. Everything registered that way is
+A module implements `NextcloudModule` and registers its views, commands, ribbon
+icons and status bar items through the `ModuleContext` it receives; it can add its own
+settings below its toggle (`renderSettings`). Everything registered that way is
 removed again when the module is switched off. To add a module, create a folder
 under `src/modules/` and add it to the list in `src/main.ts`.
 
@@ -158,5 +195,5 @@ npm run dev     # watch build to main.js
 npm run build   # type-check + production build
 ```
 
-Enable the plugin under *Settings → Community plugins*. For phone and tablet, sync
-the vault (including `main.js`, `manifest.json` and `styles.css`) to the devices.
+Enable the plugin under *Settings → Community plugins*. For phone and tablet, install
+it through BRAT (the sync module doesn't sync this plugin's own folder).

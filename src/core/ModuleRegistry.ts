@@ -7,7 +7,7 @@ import { ModuleContext, NextcloudModule } from "./types";
  * so disabling it removes its commands, ribbon icons and open views again.
  */
 export class ModuleRegistry {
-	private loaded = new Map<string, Component>();
+	private loaded = new Map<string, { component: Component; ctx: ModuleContext }>();
 	// Obsidian has no public API to unregister a view type, so remember which
 	// ones were registered and don't register them twice when re-enabling.
 	private registeredViews = new Set<string>();
@@ -15,7 +15,8 @@ export class ModuleRegistry {
 	constructor(private plugin: NextcloudPlugin, readonly modules: NextcloudModule[]) {}
 
 	isEnabled(id: string): boolean {
-		return this.plugin.settings.modules[id] !== false;
+		const enabled = this.plugin.settings.modules[id];
+		return enabled ?? this.modules.find((m) => m.id === id)?.defaultEnabled !== false;
 	}
 
 	loadEnabled(): void {
@@ -55,6 +56,12 @@ export class ModuleRegistry {
 				const el = plugin.addRibbonIcon(icon, title, callback);
 				component.register(() => el.remove());
 			},
+			addStatusBarItem: () => {
+				const el = plugin.addStatusBarItem();
+				component.register(() => el.remove());
+				return el;
+			},
+			register: (callback) => component.register(callback),
 			loadData: <T>() => plugin.settings.moduleData[module.id] as T | undefined,
 			saveData: async (data) => {
 				plugin.settings.moduleData[module.id] = data;
@@ -62,13 +69,19 @@ export class ModuleRegistry {
 			},
 		};
 		module.load(ctx);
-		this.loaded.set(module.id, component);
+		this.loaded.set(module.id, { component, ctx });
+	}
+
+	/** Lets each enabled module add its own settings below its toggle. */
+	renderSettings(module: NextcloudModule, container: HTMLElement): void {
+		const loaded = this.loaded.get(module.id);
+		if (loaded && module.renderSettings) module.renderSettings(container, loaded.ctx);
 	}
 
 	private unload(id: string): void {
-		const component = this.loaded.get(id);
-		if (!component) return;
-		this.plugin.removeChild(component);
+		const loaded = this.loaded.get(id);
+		if (!loaded) return;
+		this.plugin.removeChild(loaded.component);
 		this.loaded.delete(id);
 	}
 }
