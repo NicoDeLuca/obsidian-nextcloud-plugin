@@ -1,7 +1,8 @@
 import { ButtonComponent, DropdownComponent, ItemView, Menu, moment, Notice, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
 import { CalDavApi, CalendarInfo } from "./CalDavApi";
-import { confirmModal, EventDetailModal, EventFormModal } from "./EventModals";
+import { confirmModal } from "../../core/ui";
+import { EventDetailModal, EventFormModal } from "./EventModals";
 import { CalendarEvent, createEventIcs, EventDraft, updateEventIcs } from "./ics";
 import { layoutDay } from "./layout";
 

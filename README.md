@@ -10,6 +10,9 @@ ingredients and instructions, and editing/creating recipes as Markdown.
 **Calendar module:** day, 3-day, 5-day, week and month views of your Nextcloud
 calendars (CalDAV), show/hide calendars, and creating, editing and deleting events.
 
+**Tasks module:** your Nextcloud Tasks lists (CalDAV) with a "Today" view,
+subtasks, quick add, checking off, and editing due date, priority and notes.
+
 File sync is intentionally out of scope; use Remotely Sync for that.
 
 ## Installation
@@ -75,6 +78,14 @@ Click an empty slot or **+** to create an event, click an event to see, edit or
 delete it. The layers button shows or hides calendars. Recurring events are shown
 but can't be edited yet; read-only calendars (e.g. birthdays) are shown only.
 
+### Tasks
+
+Open it from the ribbon (checklist icon) or the command *Nextcloud: Open tasks*.
+Choose *Today*, *All lists* or a single list at the top; type into the field and
+press Enter to add a task (in *Today* it is due today). Tick a task to complete it,
+click it to edit or delete it. The double-check button shows completed tasks.
+Recurring tasks are shown but can't be completed or edited yet.
+
 ## Architecture
 
 ```
@@ -84,10 +95,12 @@ src/
 ├── core/
 │   ├── NextcloudClient.ts   # requestUrl + Basic Auth; the only code that talks to Nextcloud
 │   ├── ModuleRegistry.ts    # loads/unloads modules based on the toggles
+│   ├── CalDav.ts            # CalDAV access shared by calendar and tasks
 │   └── types.ts
 └── modules/
     ├── cookbook/            # one folder per Nextcloud app
-    └── calendar/
+    ├── calendar/
+    └── tasks/
 ```
 
 A module implements `NextcloudModule` and registers its views, commands and ribbon

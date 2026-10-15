@@ -1,5 +1,6 @@
-import { App, ButtonComponent, ItemView, Modal, Notice, Setting, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, ItemView, Notice, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
+import { confirmModal } from "../../core/ui";
 import { CookbookApi, normalizeRecipe, RawRecipe } from "./CookbookApi";
 import { EMPTY_RECIPE, markdownToRecipe, RecipeFormatError, recipeToMarkdown } from "./RecipeMarkdown";
 
@@ -111,7 +112,7 @@ export class RecipeEditView extends ItemView {
 			if (recipeId && this.loaded) {
 				const current = await this.api.getRawRecipe(recipeId);
 				if (current.dateModified !== this.loaded.dateModified) {
-					const overwrite = await askConfirm(
+					const overwrite = await confirmModal(
 						this.app,
 						"Recipe changed elsewhere",
 						"This recipe was changed somewhere else after you opened it. Saving overwrites those changes.",
@@ -137,26 +138,4 @@ function saveErrorMessage(e: unknown): string {
 	const status = e && typeof e === "object" && "status" in e ? (e as { status: number }).status : 0;
 	if (status === 409) return "another recipe with this name already exists.";
 	return errorMessage(e);
-}
-
-function askConfirm(app: App, title: string, message: string, confirmText: string): Promise<boolean> {
-	return new Promise((resolve) => {
-		let confirmed = false;
-		const modal = new Modal(app);
-		modal.titleEl.setText(title);
-		modal.contentEl.createEl("p", { text: message });
-		new Setting(modal.contentEl)
-			.addButton((b) => b.setButtonText("Cancel").onClick(() => modal.close()))
-			.addButton((b) =>
-				b
-					.setButtonText(confirmText)
-					.setWarning()
-					.onClick(() => {
-						confirmed = true;
-						modal.close();
-					})
-			);
-		modal.onClose = () => resolve(confirmed);
-		modal.open();
-	});
 }
