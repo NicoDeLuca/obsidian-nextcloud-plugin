@@ -1,5 +1,6 @@
-import { Component } from "obsidian";
+import { Component, MarkdownRenderChild } from "obsidian";
 import type NextcloudPlugin from "../main";
+import { BlockDefinition, BlockError, BlockHost, Options, renderBlockMessage } from "./blocks";
 import { ModuleContext, NextcloudModule } from "./types";
 
 /**
@@ -11,6 +12,8 @@ export class ModuleRegistry {
 	// Obsidian has no public API to unregister a view type, so remember which
 	// ones were registered and don't register them twice when re-enabling.
 	private registeredViews = new Set<string>();
+	// Same for code block processors: registered once, they look up the current definition.
+	private blocks = new Map<string, { module: NextcloudModule; block: BlockDefinition | null }>();
 
 	constructor(private plugin: NextcloudPlugin, readonly modules: NextcloudModule[]) {}
 
@@ -62,6 +65,22 @@ export class ModuleRegistry {
 				return el;
 			},
 			register: (callback) => component.register(callback),
+			registerBlock: (block) => {
+				if (!this.blocks.has(block.language)) {
+					plugin.registerMarkdownCodeBlockProcessor(block.language, (source, el, mctx) => {
+						const entry = this.blocks.get(block.language)!;
+						const host: BlockHost = { app: plugin.app, addChild: (child) => mctx.addChild(child) };
+						if (!entry.block) renderBlockMessage(el, `Das Nextcloud-Modul „${entry.module.name}“ ist ausgeschaltet (Einstellungen → Nextcloud).`);
+						else this.renderBlock(entry.block, source, el, host);
+					});
+				}
+				this.blocks.set(block.language, { module, block });
+				component.register(() => this.blocks.set(block.language, { module, block: null }));
+			},
+			exposeApi: (key, api) => {
+				plugin.api[key] = api;
+				component.register(() => delete plugin.api[key]);
+			},
 			loadData: <T>() => plugin.settings.moduleData[module.id] as T | undefined,
 			saveData: async (data) => {
 				plugin.settings.moduleData[module.id] = data;
@@ -70,6 +89,31 @@ export class ModuleRegistry {
 		};
 		module.load(ctx);
 		this.loaded.set(module.id, { component, ctx });
+	}
+
+	/** Blocks of the enabled modules. */
+	activeBlocks(): BlockDefinition[] {
+		return [...this.blocks.values()].flatMap((e) => (e.block ? [e.block] : []));
+	}
+
+	/**
+	 * Draws a block into `el`. `options` is the YAML text of a code block or an object (from scripts).
+	 * Problems with the options are shown inside the block.
+	 */
+	renderBlock(block: BlockDefinition, options: string | Record<string, unknown> | undefined, el: HTMLElement, host: BlockHost): void {
+		let child: MarkdownRenderChild;
+		try {
+			const parsed = typeof options === "string" ? Options.parse(options) : new Options(options);
+			const unknown = parsed.unknownKeys(block.keys);
+			if (unknown.length) {
+				throw new BlockError(`Unbekannte Option${unknown.length > 1 ? "en" : ""}: ${unknown.join(", ")}. Möglich: ${block.keys.join(", ")}.`);
+			}
+			child = block.create(el, parsed, host);
+		} catch (e) {
+			renderBlockMessage(el, e instanceof Error ? e.message : String(e));
+			return;
+		}
+		host.addChild(child);
 	}
 
 	/** Lets each enabled module add its own settings below its toggle. */

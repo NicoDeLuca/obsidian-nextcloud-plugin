@@ -56,7 +56,8 @@ export class TimeTracker {
 		this.notify();
 	}
 
-	async run(action: TimerAction): Promise<void> {
+	/** Runs a timer action; returns the error message, or null on success. */
+	async run(action: TimerAction): Promise<string | null> {
 		try {
 			const state = await this.api.timer(action);
 			this.apply(state);
@@ -68,10 +69,13 @@ export class TimeTracker {
 				const calendar = e.inCalendar ? "" : "\nDer Kalendertermin fehlt – bitte in der Zeiterfassung prüfen.";
 				new Notice(`Zeiterfassung: gestoppt, ${e.start}–${e.end}, ${hm(e.workSeconds)} h gearbeitet (Pause ${hm(e.pauseMinutes * 60)}).${calendar}`, 8000);
 			}
+			return null;
 		} catch (e) {
 			// 409: the timer was changed on another device meanwhile (or the command didn't fit its state).
-			new Notice(`Zeiterfassung: ${messageOf(e)}`, 8000);
+			const message = messageOf(e);
+			new Notice(`Zeiterfassung: ${message}`, 8000);
 			if (e instanceof ZeiterfassungError && e.status === 409) await this.refresh();
+			return message;
 		}
 	}
 

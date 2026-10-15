@@ -1,5 +1,7 @@
 import { App } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { calendarApi } from "./api";
+import { calendarBlock } from "./CalendarBlock";
 import { CalDavApi } from "./CalDavApi";
 import { CALENDAR_VIEW, CalendarView, HiddenCalendars } from "./CalendarView";
 
@@ -26,6 +28,8 @@ export const calendarModule: NextcloudModule = {
 			name: "Kalender öffnen",
 			callback: () => openCalendar(app),
 		});
+		ctx.registerBlock(calendarBlock(api, hidden));
+		ctx.exposeApi("calendar", calendarApi(api, hidden));
 	},
 };
 

@@ -722,3 +722,135 @@ input.nc-recurrence-number {
 .nc-time-status.nc-time-over {
 	color: var(--color-red);
 }
+
+/* Blocks in notes (```nextcloud-…) */
+.nc-block {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2) var(--size-4-3);
+	background: var(--background-primary);
+}
+
+.nc-block-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-1);
+}
+
+.nc-block-title {
+	flex: 1;
+	font-weight: var(--font-semibold);
+}
+
+.nc-block-actions {
+	display: flex;
+	gap: var(--size-4-1);
+	margin-left: auto;
+}
+
+.nc-block-actions button {
+	padding: var(--size-2-2) var(--size-4-1);
+	height: auto;
+	box-shadow: none;
+	background: transparent;
+}
+
+.nc-block-error {
+	color: var(--text-error);
+	margin: 0;
+}
+
+.nc-block-footer:not(:empty) {
+	margin-top: var(--size-4-2);
+}
+
+.nc-block-footer .nc-tasks-add {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.nc-block .nc-tasks-list {
+	max-width: none;
+}
+
+.nc-block .nc-cookbook-status {
+	margin: var(--size-4-1) 0;
+}
+
+/* Agenda */
+.nc-agenda-day {
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	color: var(--text-muted);
+	margin-top: var(--size-4-2);
+	padding-bottom: var(--size-2-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.nc-agenda-event {
+	display: flex;
+	gap: var(--size-4-3);
+	align-items: baseline;
+	padding: var(--size-4-1) 0 var(--size-4-1) var(--size-4-2);
+	border-left: 3px solid var(--nc-cal-color, var(--interactive-accent));
+	margin: var(--size-2-2) 0;
+	cursor: pointer;
+}
+
+.nc-agenda-event:hover {
+	background: var(--background-modifier-hover);
+}
+
+.nc-agenda-time {
+	flex: 0 0 auto;
+	min-width: 6.5em;
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.nc-agenda-main {
+	min-width: 0;
+}
+
+/* Time tracking block */
+.nc-time-timer {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--size-4-3);
+	margin-bottom: var(--size-4-2);
+}
+
+.nc-time-clock {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.nc-time-clock-value {
+	font-size: 1.6em;
+	font-weight: var(--font-semibold);
+	font-variant-numeric: tabular-nums;
+}
+
+.nc-time-buttons {
+	display: flex;
+	gap: var(--size-4-2);
+}
+
+/* Deck block: columns scroll sideways inside the note; a single list takes the full width */
+.nc-block-deck {
+	padding: var(--size-4-2) 0 0;
+	border-top-width: 2px;
+}
+
+.nc-block-deck.is-single .nc-deck-stack {
+	flex: 1 1 auto;
+}
+
+/* Recipe block */
+.nc-block .nc-recipe h3 {
+	margin-top: 0;
+}

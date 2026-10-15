@@ -1,5 +1,7 @@
 import { App } from "obsidian";
 import { NextcloudModule } from "../../core/types";
+import { tasksApi } from "./api";
+import { tasksBlock } from "./TasksBlock";
 import { TasksApi } from "./TasksApi";
 import { TASKS_VIEW, TasksView } from "./TasksView";
 
@@ -18,6 +20,8 @@ export const tasksModule: NextcloudModule = {
 			name: "Aufgaben öffnen",
 			callback: () => openTasks(app),
 		});
+		ctx.registerBlock(tasksBlock(api));
+		ctx.exposeApi("tasks", tasksApi(api));
 	},
 };
 

@@ -105,7 +105,7 @@ export class ActivityView extends ItemView {
 				list.createDiv({ cls: "nc-activity-day", text: day });
 				this.lastDay = day;
 			}
-			this.renderActivity(list, activity);
+			renderActivity(list, activity);
 		}
 		if (next === null) return;
 
@@ -125,22 +125,24 @@ export class ActivityView extends ItemView {
 		});
 	}
 
-	private renderActivity(parent: HTMLElement, activity: Activity) {
-		const row = parent.createDiv({ cls: "nc-activity-item" });
-		const iconEl = row.createDiv({ cls: "nc-activity-icon" });
-		if (activity.icon) iconEl.createEl("img", { attr: { src: activity.icon, alt: "" } });
+}
 
-		const main = row.createDiv({ cls: "nc-activity-main" });
-		const subject = main.createDiv({ cls: "nc-activity-subject" });
-		renderSubject(subject, activity);
-		if (activity.message) main.createDiv({ cls: "nc-activity-message", text: activity.message });
-		main.createDiv({ cls: "nc-task-meta", text: moment(activity.date).format("LT") });
+/** One entry: icon, subject, message and time; a click opens it in Nextcloud. */
+export function renderActivity(parent: HTMLElement, activity: Activity) {
+	const row = parent.createDiv({ cls: "nc-activity-item" });
+	const iconEl = row.createDiv({ cls: "nc-activity-icon" });
+	if (activity.icon) iconEl.createEl("img", { attr: { src: activity.icon, alt: "" } });
 
-		if (activity.link) {
-			row.addClass("is-link");
-			row.setAttr("title", "In Nextcloud öffnen");
-			row.addEventListener("click", () => window.open(activity.link, "_blank"));
-		}
+	const main = row.createDiv({ cls: "nc-activity-main" });
+	const subject = main.createDiv({ cls: "nc-activity-subject" });
+	renderSubject(subject, activity);
+	if (activity.message) main.createDiv({ cls: "nc-activity-message", text: activity.message });
+	main.createDiv({ cls: "nc-task-meta", text: moment(activity.date).format("LT") });
+
+	if (activity.link) {
+		row.addClass("is-link");
+		row.setAttr("title", "In Nextcloud öffnen");
+		row.addEventListener("click", () => window.open(activity.link, "_blank"));
 	}
 }
 
@@ -162,7 +164,7 @@ function renderSubject(el: HTMLElement, activity: Activity) {
 	}
 }
 
-function dayLabel(date: Date): string {
+export function dayLabel(date: Date): string {
 	const days = moment().startOf("day").diff(moment(date).startOf("day"), "days");
 	if (days === 0) return "Heute";
 	if (days === 1) return "Gestern";
