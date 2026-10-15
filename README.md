@@ -82,8 +82,14 @@ Durations accept e.g. `1 h 20 min`, `1h20m`, `2 Stunden`, `45 min` or `45`.
 
 Open it from the ribbon (calendar icon) or the command *Nextcloud: Open calendar*.
 Click an empty slot or **+** to create an event, click an event to see, edit or
-delete it. The layers button shows or hides calendars. Recurring events are shown
-but can't be edited yet; read-only calendars (e.g. birthdays) are shown only.
+delete it. The layers button shows or hides calendars. Read-only calendars (e.g.
+birthdays) are shown only.
+
+Events can repeat daily, weekly (on chosen weekdays), monthly or yearly, every N
+days/weeks/…, ending never, after a number of times or on a date. Editing or
+deleting a recurring event asks whether it applies to *this event*, *this and
+following events* (splits the series) or *all events*. Rules created elsewhere that
+the form can't show (e.g. "every 2nd Tuesday") are kept unchanged.
 
 ### Tasks
 
@@ -91,7 +97,10 @@ Open it from the ribbon (checklist icon) or the command *Nextcloud: Open tasks*.
 Choose *Today*, *All lists* or a single list at the top; type into the field and
 press Enter to add a task (in *Today* it is due today). Tick a task to complete it,
 click it to edit or delete it. The double-check button shows completed tasks.
-Recurring tasks are shown but can't be completed or edited yet.
+
+Tasks can repeat like events. Ticking a repeating task moves its due date to the
+next occurrence after today (missed ones are skipped); when the series has ended,
+the task is completed.
 
 ### Deck
 
@@ -116,6 +125,7 @@ src/
 │   ├── NextcloudClient.ts   # requestUrl + Basic Auth; the only code that talks to Nextcloud
 │   ├── ModuleRegistry.ts    # loads/unloads modules based on the toggles
 │   ├── CalDav.ts            # CalDAV access shared by calendar and tasks
+│   ├── recurrence.ts        # repeat rules (RRULE) + the shared "Repeat" form settings
 │   └── types.ts
 └── modules/
     ├── cookbook/            # one folder per Nextcloud app

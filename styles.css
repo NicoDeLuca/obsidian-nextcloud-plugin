@@ -623,3 +623,29 @@
 	justify-content: center;
 	padding: var(--size-4-3);
 }
+
+/* Recurrence settings and scope choice */
+input.nc-recurrence-number {
+	width: 4.5em;
+}
+
+.nc-recurrence-days {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.nc-recurrence-day {
+	padding: 2px 8px;
+}
+
+.nc-recurrence-day.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.nc-scope-choices {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}

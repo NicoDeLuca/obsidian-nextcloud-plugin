@@ -1,9 +1,10 @@
 import { ButtonComponent, DropdownComponent, ItemView, Menu, moment, Notice, Platform, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { isConflict } from "../../core/CalDav";
 import { errorMessage } from "../../core/NextcloudClient";
 import { CalDavApi, CalendarInfo } from "./CalDavApi";
 import { confirmModal } from "../../core/ui";
-import { EventDetailModal, EventFormModal } from "./EventModals";
-import { CalendarEvent, createEventIcs, EventDraft, updateEventIcs } from "./ics";
+import { chooseScope, EventDetailModal, EventFormModal } from "./EventModals";
+import { CalendarEvent, createEventIcs, deleteRecurringIcs, EventDraft, readRecurrence, Scope, updateEventIcs, updateRecurringIcs } from "./ics";
 import { layoutDay } from "./layout";
 
 export const CALENDAR_VIEW = "nextcloud-calendar";
@@ -351,8 +352,9 @@ export class CalendarView extends ItemView {
 			draft,
 			calendar: calendars[0],
 			calendars,
-			save: async (draft, calendar) => {
-				const { uid, ics } = createEventIcs(draft);
+			rule: null,
+			save: async (draft, calendar, rule) => {
+				const { uid, ics } = createEventIcs(draft, rule);
 				await this.api.saveEvent(`${calendar.path}${uid}.ics`, ics);
 				new Notice("Event created.");
 				this.loadEvents();
@@ -360,38 +362,75 @@ export class CalendarView extends ItemView {
 		}).open();
 	}
 
-	private editEvent(event: CalendarEvent) {
+	private async editEvent(event: CalendarEvent) {
+		const scope = event.recurring ? await chooseScope(this.app, "Edit recurring event") : null;
+		if (event.recurring && !scope) return;
+		let source: { ics: string; etag: string };
+		try {
+			source = await this.api.getEventSource(event.path);
+		} catch (e) {
+			new Notice(`Could not load event: ${errorMessage(e)}`, 8000);
+			return;
+		}
+		// "This event" edits a single occurrence, so its form has no "Repeat" settings.
+		const rule = scope === "this" ? undefined : readRecurrence(source.ics, scope === "following" ? event : undefined);
+
 		new EventFormModal(this.app, {
-			heading: "Edit event",
+			heading: scope === "this" ? "Edit this event" : scope === "following" ? "Edit this and following events" : scope === "all" ? "Edit all events" : "Edit event",
 			draft: { title: event.title, start: event.start, end: event.end, allDay: event.allDay, location: event.location, description: event.description },
 			calendar: event.calendar,
-			save: async (draft) => {
-				const source = await this.api.getEventSource(event.path);
-				if (source.etag !== event.etag) {
-					const overwrite = await confirmModal(
-						this.app,
-						"Event changed elsewhere",
-						"This event was changed somewhere else after the calendar was loaded. Saving overwrites those changes.",
-						"Overwrite"
-					);
-					if (!overwrite) throw new Error("cancelled because the event changed elsewhere");
+			rule,
+			save: async (draft, _calendar, rule) => {
+				const latest = await this.latestSource(event);
+				if (!scope) {
+					await this.api.saveEvent(event.path, updateEventIcs(latest.ics, draft, event, rule), latest.etag);
+				} else {
+					const result = updateRecurringIcs(latest.ics, draft, event, scope, rule);
+					await this.api.saveEvent(event.path, result.ics, latest.etag);
+					if (result.created) await this.api.saveEvent(`${event.calendar.path}${result.created.uid}.ics`, result.created.ics);
 				}
-				await this.api.saveEvent(event.path, updateEventIcs(source.ics, draft, event), source.etag);
 				new Notice("Event saved.");
 				this.loadEvents();
 			},
 		}).open();
 	}
 
+	/** The stored event, after asking whether to overwrite if it changed since the calendar was loaded. */
+	private async latestSource(event: CalendarEvent): Promise<{ ics: string; etag: string }> {
+		const source = await this.api.getEventSource(event.path);
+		if (source.etag !== event.etag) {
+			const overwrite = await confirmModal(
+				this.app,
+				"Event changed elsewhere",
+				"This event was changed somewhere else after the calendar was loaded. Saving overwrites those changes.",
+				"Overwrite"
+			);
+			if (!overwrite) throw new Error("cancelled because the event changed elsewhere");
+		}
+		return source;
+	}
+
 	private async deleteEvent(event: CalendarEvent) {
-		const confirmed = await confirmModal(this.app, "Delete event", `Delete "${event.title || "(No title)"}"?`, "Delete");
-		if (!confirmed) return;
+		let scope: Scope | null = null;
+		if (event.recurring) {
+			scope = await chooseScope(this.app, "Delete recurring event");
+			if (!scope) return;
+		} else {
+			const confirmed = await confirmModal(this.app, "Delete event", `Delete "${event.title || "(No title)"}"?`, "Delete");
+			if (!confirmed) return;
+		}
 		try {
-			await this.api.deleteEvent(event.path, event.etag);
+			if (!scope || scope === "all") {
+				await this.api.deleteEvent(event.path, event.etag);
+			} else {
+				const latest = await this.latestSource(event);
+				const ics = deleteRecurringIcs(latest.ics, event, scope);
+				if (ics === null) await this.api.deleteEvent(event.path, latest.etag);
+				else await this.api.saveEvent(event.path, ics, latest.etag);
+			}
 			new Notice("Event deleted.");
 		} catch (e) {
-			const changed = e && typeof e === "object" && "status" in e && (e as { status: number }).status === 412;
-			new Notice(changed ? "The event was changed elsewhere. Reload and try again." : `Could not delete event: ${errorMessage(e)}`, 8000);
+			new Notice(isConflict(e) ? "The event was changed elsewhere. Reload and try again." : `Could not delete event: ${errorMessage(e)}`, 8000);
 		}
 		this.loadEvents();
 	}
