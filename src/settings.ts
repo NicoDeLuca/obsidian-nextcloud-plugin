@@ -35,7 +35,9 @@ export class NextcloudSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("App-Passwort")
-			.setDesc("Erstellen in Nextcloud unter Einstellungen → Sicherheit → Geräte & Sitzungen.")
+			.setDesc(
+				"Erstellen in Nextcloud unter Einstellungen → Sicherheit → Geräte & Sitzungen. Es wird unverschlüsselt in der data.json dieses Plugins im Ordner .obsidian gespeichert – den .obsidian-Ordner daher nicht in ein öffentliches Git-Repository oder einen fremden Sync geben."
+			)
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text.setValue(this.plugin.settings.appPassword).onChange(async (value) => {
