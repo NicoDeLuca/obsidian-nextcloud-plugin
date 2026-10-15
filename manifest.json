@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-nextcloud-plugin",
 	"name": "Nextcloud",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"minAppVersion": "1.7.2",
-	"description": "Connects to Nextcloud once and provides modules for individual Nextcloud apps (starting with Cookbook).",
+	"description": "Verbindet Obsidian mit Nextcloud und bringt einzelne Nextcloud-Apps als Module: Kochbuch, Kalender, Aufgaben, Deck und Aktivität.",
 	"author": "Nico De Luca",
 	"isDesktopOnly": false
 }

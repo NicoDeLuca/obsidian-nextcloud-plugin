@@ -197,7 +197,7 @@ function setRule(vtodo: ICAL.Component, rule: RuleChoice) {
 function modify(ics: string, change: (vtodo: ICAL.Component) => void): string {
 	const root = parseCalendar(ics);
 	const vtodo = root.getAllSubcomponents("vtodo").find((v) => !v.hasProperty("recurrence-id"));
-	if (!vtodo) throw new Error("The task could not be found in the calendar data.");
+	if (!vtodo) throw new Error("Die Aufgabe wurde in den Kalenderdaten nicht gefunden.");
 	change(vtodo);
 	const now = utcNow();
 	vtodo.updatePropertyWithValue("dtstamp", now);

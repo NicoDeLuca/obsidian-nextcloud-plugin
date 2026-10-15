@@ -8,7 +8,7 @@ export function confirmModal(app: App, title: string, message: string, confirmTe
 		modal.titleEl.setText(title);
 		modal.contentEl.createEl("p", { text: message });
 		new Setting(modal.contentEl)
-			.addButton((b) => b.setButtonText("Cancel").onClick(() => modal.close()))
+			.addButton((b) => b.setButtonText("Abbrechen").onClick(() => modal.close()))
 			.addButton((b) =>
 				b
 					.setButtonText(confirmText)

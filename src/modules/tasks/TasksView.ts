@@ -33,7 +33,7 @@ export class TasksView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Tasks";
+		return "Aufgaben";
 	}
 
 	getIcon() {
@@ -77,7 +77,7 @@ export class TasksView extends ItemView {
 		if (!this.bodyEl) return; // setState can run before onOpen
 		const loadId = ++this.loadId;
 		this.bodyEl.empty();
-		this.bodyEl.createEl("p", { text: "Loading…", cls: "nc-cookbook-status" });
+		this.bodyEl.createEl("p", { text: "Wird geladen …", cls: "nc-cookbook-status" });
 
 		let tasks: Task[] = [];
 		try {
@@ -90,12 +90,12 @@ export class TasksView extends ItemView {
 			const results = await Promise.allSettled(lists.map((l) => this.api.getTasks(l, this.showCompleted)));
 			results.forEach((r, i) => {
 				if (r.status === "fulfilled") tasks.push(...r.value);
-				else if (loadId === this.loadId) new Notice(`Could not load "${lists[i].name}": ${errorMessage(r.reason)}`);
+				else if (loadId === this.loadId) new Notice(`"${lists[i].name}" konnte nicht geladen werden: ${errorMessage(r.reason)}`);
 			});
 		} catch (e) {
 			if (loadId !== this.loadId) return;
 			this.bodyEl.empty();
-			this.bodyEl.createEl("p", { text: `Could not load task lists: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+			this.bodyEl.createEl("p", { text: `Aufgabenlisten konnten nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 			return;
 		}
 		if (loadId !== this.loadId) return;
@@ -110,7 +110,7 @@ export class TasksView extends ItemView {
 	private renderToolbar() {
 		const bar = this.toolbarEl;
 		bar.empty();
-		const dropdown = new DropdownComponent(bar).addOption("today", "Today").addOption("all", "All lists");
+		const dropdown = new DropdownComponent(bar).addOption("today", "Heute").addOption("all", "Alle Listen");
 		for (const list of this.lists ?? []) dropdown.addOption(list.path, list.name);
 		dropdown.setValue(this.filter).onChange((filter) => {
 			this.filter = filter;
@@ -120,20 +120,20 @@ export class TasksView extends ItemView {
 		const actions = bar.createDiv({ cls: "nc-cal-toolbar-group" });
 		const toggle = new ButtonComponent(actions)
 			.setIcon("check-check")
-			.setTooltip(this.showCompleted ? "Hide completed" : "Show completed")
+			.setTooltip(this.showCompleted ? "Erledigte ausblenden" : "Erledigte anzeigen")
 			.onClick(() => {
 				this.showCompleted = !this.showCompleted;
 				this.changed();
 			});
 		toggle.buttonEl.toggleClass("is-active", this.showCompleted);
-		new ButtonComponent(actions).setIcon("refresh-cw").setTooltip("Reload").onClick(() => this.reload());
+		new ButtonComponent(actions).setIcon("refresh-cw").setTooltip("Neu laden").onClick(() => this.reload());
 
 		const target = this.targetList();
 		if (!target) return;
 		const add = bar.createEl("input", {
 			type: "text",
 			cls: "nc-tasks-add",
-			attr: { placeholder: `Add a task to ${target.name}…`, enterkeyhint: "done" },
+			attr: { placeholder: `Aufgabe zu ${target.name} hinzufügen …`, enterkeyhint: "done" },
 		});
 		add.addEventListener("keydown", async (evt) => {
 			if (evt.key !== "Enter" || evt.isComposing || !add.value.trim()) return;
@@ -152,7 +152,7 @@ export class TasksView extends ItemView {
 	private renderTasks(tasks: Task[]) {
 		this.bodyEl.empty();
 		if (!tasks.length) {
-			const empty = this.filter === "today" ? "Nothing due today." : "No tasks.";
+			const empty = this.filter === "today" ? "Heute ist nichts fällig." : "Keine Aufgaben.";
 			this.bodyEl.createEl("p", { text: empty, cls: "nc-cookbook-status" });
 			return;
 		}
@@ -193,13 +193,13 @@ export class TasksView extends ItemView {
 		checkbox.addEventListener("change", () => this.setCompleted(task, checkbox));
 
 		const main = row.createDiv({ cls: "nc-task-main" });
-		main.createDiv({ cls: "nc-task-title", text: task.title || "(No title)" });
+		main.createDiv({ cls: "nc-task-title", text: task.title || "(Ohne Titel)" });
 		const meta = main.createDiv({ cls: "nc-task-meta" });
 		if (task.due) meta.createSpan({ text: formatDue(task), cls: isOverdue(task) ? "nc-task-due is-overdue" : "nc-task-due" });
 		const priority = priorityBucket(task.priority);
 		if (priority) meta.createSpan({ text: priority === 1 ? "!!!" : priority === 5 ? "!!" : "!", cls: `nc-task-priority p${priority}` });
-		if (task.recurring) meta.createSpan({ text: "↻", attr: { title: "Recurring" } });
-		if (task.notes) meta.createSpan({ text: "¶", attr: { title: "Has notes" } });
+		if (task.recurring) meta.createSpan({ text: "↻", attr: { title: "Wiederkehrend" } });
+		if (task.notes) meta.createSpan({ text: "¶", attr: { title: "Hat Notizen" } });
 		if (showList) {
 			const list = meta.createSpan({ cls: "nc-task-list" });
 			list.createSpan({ cls: "nc-cal-dot" }).style.background = task.list.color;
@@ -223,13 +223,13 @@ export class TasksView extends ItemView {
 			if (task.recurring && checkbox.checked) {
 				const { ics, nextDue } = completeRecurringIcs(source.ics);
 				await this.api.save(task.path, ics, source.etag);
-				new Notice(nextDue ? `Done. Next: ${formatDue({ due: nextDue, dueAllDay: task.dueAllDay })}` : "Done. The series has ended.");
+				new Notice(nextDue ? `Erledigt. Nächstes Mal: ${formatDue({ due: nextDue, dueAllDay: task.dueAllDay })}` : "Erledigt. Die Serie ist beendet.");
 			} else {
 				await this.api.save(task.path, setCompletedIcs(source.ics, checkbox.checked), source.etag);
 			}
 		} catch (e) {
 			checkbox.checked = task.completed;
-			new Notice(`Could not update task: ${errorMessage(e)}`, 8000);
+			new Notice(`Aufgabe konnte nicht aktualisiert werden: ${errorMessage(e)}`, 8000);
 		}
 		this.loadTasks();
 	}
@@ -241,7 +241,7 @@ export class TasksView extends ItemView {
 			const { uid, ics } = createTaskIcs(draft);
 			await this.api.save(`${list.path}${uid}.ics`, ics);
 		} catch (e) {
-			new Notice(`Could not create task: ${errorMessage(e)}`, 8000);
+			new Notice(`Aufgabe konnte nicht angelegt werden: ${errorMessage(e)}`, 8000);
 		}
 		this.loadTasks();
 	}
@@ -251,25 +251,25 @@ export class TasksView extends ItemView {
 		if (source.etag !== task.etag) {
 			const overwrite = await confirmModal(
 				this.app,
-				"Task changed elsewhere",
-				"This task was changed somewhere else after the list was loaded. Saving overwrites those changes.",
-				"Overwrite"
+				"Aufgabe wurde woanders geändert",
+				"Diese Aufgabe wurde woanders geändert, nachdem die Liste geladen wurde. Speichern überschreibt diese Änderungen.",
+				"Überschreiben"
 			);
-			if (!overwrite) throw new Error("cancelled because the task changed elsewhere");
+			if (!overwrite) throw new Error("abgebrochen, weil die Aufgabe woanders geändert wurde");
 		}
 		await this.api.save(task.path, updateTaskIcs(source.ics, draft, task, rule), source.etag);
-		new Notice("Task saved.");
+		new Notice("Aufgabe gespeichert.");
 		this.loadTasks();
 	}
 
 	private async deleteTask(task: Task) {
-		const confirmed = await confirmModal(this.app, "Delete task", `Delete "${task.title || "(No title)"}"?`, "Delete");
+		const confirmed = await confirmModal(this.app, "Aufgabe löschen", `"${task.title || "(Ohne Titel)"}" löschen?`, "Löschen");
 		if (!confirmed) return;
 		try {
 			await this.api.delete(task.path, task.etag);
-			new Notice("Task deleted.");
+			new Notice("Aufgabe gelöscht.");
 		} catch (e) {
-			new Notice(isConflict(e) ? "The task was changed elsewhere. Reload and try again." : `Could not delete task: ${errorMessage(e)}`, 8000);
+			new Notice(isConflict(e) ? "Die Aufgabe wurde woanders geändert. Bitte neu laden und erneut versuchen." : `Aufgabe konnte nicht gelöscht werden: ${errorMessage(e)}`, 8000);
 		}
 		this.loadTasks();
 	}

@@ -4,7 +4,7 @@ import { describeRecurrence } from "../../core/recurrence";
 import { renderRecurrenceSetting } from "../../core/RecurrenceSetting";
 import { RuleChoice, Task, TaskDraft } from "./vtodo";
 
-export const PRIORITIES: Record<string, string> = { "0": "None", "1": "High", "5": "Medium", "9": "Low" };
+export const PRIORITIES: Record<string, string> = { "0": "Keine", "1": "Hoch", "5": "Mittel", "9": "Niedrig" };
 
 /** Details of a task; editable unless it is in a read-only list. */
 export class TaskModal extends Modal {
@@ -29,19 +29,19 @@ export class TaskModal extends Modal {
 		listEl.createSpan({ text: task.list.name });
 
 		if (task.list.readOnly) {
-			this.titleEl.setText(task.title || "(No title)");
-			if (task.due) contentEl.createEl("p", { text: `Due: ${formatDue(task)}` });
+			this.titleEl.setText(task.title || "(Ohne Titel)");
+			if (task.due) contentEl.createEl("p", { text: `Fällig: ${formatDue(task)}` });
 			if (task.rule) contentEl.createEl("p", { text: `↻ ${describeRecurrence(task.rule)}` });
 			if (task.notes) contentEl.createEl("p", { text: task.notes, cls: "nc-cal-detail-description" });
-			contentEl.createEl("p", { text: "This list is read-only.", cls: "nc-cal-hint" });
+			contentEl.createEl("p", { text: "Diese Liste ist schreibgeschützt.", cls: "nc-cal-hint" });
 			return;
 		}
 
-		this.titleEl.setText("Edit task");
+		this.titleEl.setText("Aufgabe bearbeiten");
 		const draft = this.draft;
-		new Setting(contentEl).setName("Title").addText((t) => t.setValue(draft.title).onChange((v) => (draft.title = v)));
+		new Setting(contentEl).setName("Titel").addText((t) => t.setValue(draft.title).onChange((v) => (draft.title = v)));
 
-		const dueSetting = new Setting(contentEl).setName("Due").setDesc("Leave the time empty for a whole day.");
+		const dueSetting = new Setting(contentEl).setName("Fällig").setDesc("Ohne Uhrzeit gilt der ganze Tag.");
 		const dateInput = dueSetting.controlEl.createEl("input", { type: "date" });
 		const timeInput = dueSetting.controlEl.createEl("input", { type: "time" });
 		if (draft.due) {
@@ -63,7 +63,7 @@ export class TaskModal extends Modal {
 		dueSetting.addExtraButton((b) =>
 			b
 				.setIcon("x")
-				.setTooltip("No due date")
+				.setTooltip("Kein Fälligkeitsdatum")
 				.onClick(() => {
 					dateInput.value = "";
 					timeInput.value = "";
@@ -73,13 +73,13 @@ export class TaskModal extends Modal {
 
 		renderRecurrenceSetting(contentEl, this.rule, () => draft.due ?? new Date(), (rule) => (this.rule = rule));
 
-		new Setting(contentEl).setName("Priority").addDropdown((d) =>
+		new Setting(contentEl).setName("Priorität").addDropdown((d) =>
 			d
 				.addOptions(PRIORITIES)
 				.setValue(String(draft.priority))
 				.onChange((v) => (draft.priority = Number(v)))
 		);
-		new Setting(contentEl).setName("Notes").addTextArea((t) => {
+		new Setting(contentEl).setName("Notizen").addTextArea((t) => {
 			t.setValue(draft.notes).onChange((v) => (draft.notes = v));
 			t.inputEl.rows = 4;
 		});
@@ -88,25 +88,25 @@ export class TaskModal extends Modal {
 		new Setting(contentEl)
 			.addButton((b) =>
 				b
-					.setButtonText("Delete")
+					.setButtonText("Löschen")
 					.setWarning()
 					.onClick(() => {
 						this.close();
 						this.actions.delete();
 					})
 			)
-			.addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()))
+			.addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close()))
 			.addButton((b) => {
 				saveButton = b;
-				b.setButtonText("Save")
+				b.setButtonText("Speichern")
 					.setCta()
 					.onClick(async () => {
 						if (!draft.title.trim()) {
-							new Notice("Please enter a title.");
+							new Notice("Bitte einen Titel eingeben.");
 							return;
 						}
 						if (this.rule && !draft.due) {
-							new Notice("A repeating task needs a due date.");
+							new Notice("Eine wiederkehrende Aufgabe braucht ein Fälligkeitsdatum.");
 							return;
 						}
 						saveButton.setDisabled(true);
@@ -116,7 +116,7 @@ export class TaskModal extends Modal {
 							await this.actions.save({ ...draft, title: draft.title.trim(), priority }, this.rule);
 							this.close();
 						} catch (e) {
-							new Notice(`Could not save task: ${errorMessage(e)}`, 8000);
+							new Notice(`Aufgabe konnte nicht gespeichert werden: ${errorMessage(e)}`, 8000);
 						} finally {
 							saveButton.setDisabled(false);
 						}
@@ -129,13 +129,13 @@ export class TaskModal extends Modal {
 	}
 }
 
-/** "Today", "Tomorrow 14:00", "Yesterday", or a date. */
+/** "Heute", "Morgen 14:00", "Gestern" oder ein Datum. */
 export function formatDue(task: { due: Date | null; dueAllDay: boolean }): string {
 	if (!task.due) return "";
 	const due = moment(task.due);
 	const today = moment().startOf("day");
 	const days = due.clone().startOf("day").diff(today, "days");
-	const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : days === -1 ? "Yesterday" : due.format("ll");
+	const day = days === 0 ? "Heute" : days === 1 ? "Morgen" : days === -1 ? "Gestern" : due.format("ll");
 	return task.dueAllDay ? day : `${day} ${due.format("LT")}`;
 }
 

@@ -1,10 +1,21 @@
-import { ButtonComponent, ItemView, Notice, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, ItemView, moment, Notice, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { errorMessage } from "../../core/NextcloudClient";
 import { confirmModal } from "../../core/ui";
 import { CookbookApi, normalizeRecipe, RawRecipe } from "./CookbookApi";
 import { EMPTY_RECIPE, markdownToRecipe, RecipeFormatError, recipeToMarkdown } from "./RecipeMarkdown";
 
 export const RECIPE_EDIT_VIEW = "nextcloud-cookbook-edit";
+
+/** Unsaved editor content, kept per recipe ("new" for a new one) so it survives closing Obsidian. */
+export interface Draft {
+	markdown: string;
+	savedAt: number;
+}
+
+export interface DraftStore {
+	get(key: string): Draft | undefined;
+	set(key: string, draft: Draft | null): Promise<void>;
+}
 
 export interface RecipeEditViewState {
 	/** Missing for a new recipe. */
@@ -21,10 +32,14 @@ export class RecipeEditView extends ItemView {
 	private textarea: HTMLTextAreaElement | null = null;
 	private saveButton: ButtonComponent | null = null;
 	private renderId = 0;
+	/** The Markdown as loaded from the server; anything else in the editor is unsaved. */
+	private initial = "";
+	private draftTimer: number | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
 		private api: CookbookApi,
+		private drafts: DraftStore,
 		/** Called after saving or cancelling; recipeId is undefined when a new recipe was cancelled. */
 		private onDone: (leaf: WorkspaceLeaf, recipeId: string | undefined, name: string, saved: boolean) => void
 	) {
@@ -36,7 +51,7 @@ export class RecipeEditView extends ItemView {
 	}
 
 	getDisplayText() {
-		return this.recipeId ? `Edit: ${this.name}` : "New recipe";
+		return this.recipeId ? `Bearbeiten: ${this.name}` : "Neues Rezept";
 	}
 
 	getIcon() {
@@ -49,10 +64,52 @@ export class RecipeEditView extends ItemView {
 
 	async setState(state: unknown, result: ViewStateResult) {
 		const { recipeId, name } = state as RecipeEditViewState;
+		this.flushDraft(); // keep pending edits of the previous recipe before switching
 		this.recipeId = recipeId;
 		this.name = name ?? "";
 		await super.setState(state, result);
 		await this.render();
+	}
+
+	async onClose() {
+		// Closing the tab keeps the draft; write a pending one right away.
+		this.flushDraft();
+	}
+
+	private get draftKey(): string {
+		return this.recipeId ?? "new";
+	}
+
+	private get dirty(): boolean {
+		return !!this.textarea && this.textarea.value !== this.initial;
+	}
+
+	/** Saves the editor content as a draft shortly after typing stops. */
+	private scheduleDraft() {
+		if (this.draftTimer !== null) window.clearTimeout(this.draftTimer);
+		this.draftTimer = window.setTimeout(() => this.flushDraft(), 1000);
+	}
+
+	private flushDraft() {
+		if (this.draftTimer === null) return;
+		window.clearTimeout(this.draftTimer);
+		this.draftTimer = null;
+		void this.drafts.set(this.draftKey, this.dirty ? { markdown: this.textarea!.value, savedAt: Date.now() } : null);
+	}
+
+	private async discardDraft() {
+		if (this.draftTimer !== null) window.clearTimeout(this.draftTimer);
+		this.draftTimer = null;
+		await this.drafts.set(this.draftKey, null);
+	}
+
+	private async cancel() {
+		if (this.dirty) {
+			const discard = await confirmModal(this.app, "Änderungen verwerfen?", "Die Änderungen an diesem Rezept wurden noch nicht gespeichert.", "Verwerfen");
+			if (!discard) return;
+		}
+		await this.discardDraft();
+		this.onDone(this.leaf, this.recipeId, this.name, false);
 	}
 
 	private async render() {
@@ -62,16 +119,18 @@ export class RecipeEditView extends ItemView {
 		el.addClass("nc-cookbook", "nc-recipe-edit");
 		this.loaded = null;
 		this.textarea = null;
+		if (this.draftTimer !== null) window.clearTimeout(this.draftTimer);
+		this.draftTimer = null;
 
 		let markdown: string;
 		if (this.recipeId) {
-			el.createEl("p", { text: "Loading recipe…", cls: "nc-cookbook-status" });
+			el.createEl("p", { text: "Rezept wird geladen …", cls: "nc-cookbook-status" });
 			try {
 				this.loaded = await this.api.getRawRecipe(this.recipeId);
 			} catch (e) {
 				if (renderId !== this.renderId) return;
 				el.empty();
-				el.createEl("p", { text: `Could not load recipe: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+				el.createEl("p", { text: `Rezept konnte nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 				return;
 			}
 			if (renderId !== this.renderId) return;
@@ -82,15 +141,36 @@ export class RecipeEditView extends ItemView {
 
 		el.empty();
 		const toolbar = el.createDiv({ cls: "nc-recipe-edit-toolbar" });
-		new ButtonComponent(toolbar).setButtonText("Cancel").onClick(() => this.onDone(this.leaf, this.recipeId, this.name, false));
+		new ButtonComponent(toolbar).setButtonText("Abbrechen").onClick(() => this.cancel());
 		this.saveButton = new ButtonComponent(toolbar)
-			.setButtonText("Save")
+			.setButtonText("Speichern")
 			.setCta()
 			.onClick(() => this.save());
 
-		this.textarea = el.createEl("textarea", { cls: "nc-recipe-edit-text" });
-		this.textarea.value = markdown;
-		this.textarea.spellcheck = true;
+		const draft = this.drafts.get(this.draftKey);
+		this.initial = markdown;
+		const textarea = el.createEl("textarea", { cls: "nc-recipe-edit-text" });
+		this.textarea = textarea;
+		textarea.value = markdown;
+		textarea.spellcheck = true;
+		textarea.addEventListener("input", () => this.scheduleDraft());
+
+		if (draft && draft.markdown !== markdown) {
+			const banner = el.createDiv({ cls: "nc-recipe-draft" });
+			el.insertBefore(banner, textarea);
+			banner.createSpan({ text: `Ungespeicherter Entwurf vom ${moment(draft.savedAt).format("lll")}.` });
+			new ButtonComponent(banner)
+				.setButtonText("Wiederherstellen")
+				.setCta()
+				.onClick(() => {
+					textarea.value = draft.markdown;
+					banner.remove();
+				});
+			new ButtonComponent(banner).setButtonText("Verwerfen").onClick(async () => {
+				await this.discardDraft();
+				banner.remove();
+			});
+		}
 	}
 
 	private async save() {
@@ -114,9 +194,9 @@ export class RecipeEditView extends ItemView {
 				if (current.dateModified !== this.loaded.dateModified) {
 					const overwrite = await confirmModal(
 						this.app,
-						"Recipe changed elsewhere",
-						"This recipe was changed somewhere else after you opened it. Saving overwrites those changes.",
-						"Overwrite"
+						"Rezept wurde woanders geändert",
+						"Dieses Rezept wurde woanders geändert, nachdem du es geöffnet hast. Speichern überschreibt diese Änderungen.",
+						"Überschreiben"
 					);
 					if (!overwrite) return;
 				}
@@ -124,10 +204,11 @@ export class RecipeEditView extends ItemView {
 			} else {
 				recipeId = await this.api.createRecipe(edited);
 			}
-			new Notice("Recipe saved.");
+			await this.discardDraft();
+			new Notice("Rezept gespeichert.");
 			this.onDone(this.leaf, recipeId, edited.name, true);
 		} catch (e) {
-			new Notice(`Could not save recipe: ${saveErrorMessage(e)}`, 8000);
+			new Notice(`Rezept konnte nicht gespeichert werden: ${saveErrorMessage(e)}`, 8000);
 		} finally {
 			this.saveButton.setDisabled(false);
 		}
@@ -136,6 +217,6 @@ export class RecipeEditView extends ItemView {
 
 function saveErrorMessage(e: unknown): string {
 	const status = e && typeof e === "object" && "status" in e ? (e as { status: number }).status : 0;
-	if (status === 409) return "another recipe with this name already exists.";
+	if (status === 409) return "Es gibt schon ein Rezept mit diesem Namen.";
 	return errorMessage(e);
 }

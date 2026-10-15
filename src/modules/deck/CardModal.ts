@@ -28,14 +28,14 @@ export class CardModal extends Modal {
 		if (!board.canEdit) {
 			this.titleEl.setText(card.title);
 			renderLabels(contentEl, card.labels);
-			if (card.duedate) contentEl.createEl("p", { text: `Due: ${formatDue(card.duedate)}` });
-			if (card.assignees.length) contentEl.createEl("p", { text: `Assigned: ${card.assignees.join(", ")}` });
+			if (card.duedate) contentEl.createEl("p", { text: `Fällig: ${formatDue(card.duedate)}` });
+			if (card.assignees.length) contentEl.createEl("p", { text: `Zugewiesen: ${card.assignees.join(", ")}` });
 			if (card.description) contentEl.createEl("p", { text: card.description, cls: "nc-cal-detail-description" });
-			contentEl.createEl("p", { text: "You can't edit cards on this board.", cls: "nc-cal-hint" });
+			contentEl.createEl("p", { text: "Karten auf diesem Board kannst du nicht bearbeiten.", cls: "nc-cal-hint" });
 			return;
 		}
 
-		this.titleEl.setText("Edit card");
+		this.titleEl.setText("Karte bearbeiten");
 		const edit: CardEdit = {
 			changes: {
 				title: card.title,
@@ -48,18 +48,18 @@ export class CardModal extends Modal {
 		};
 		const changes = edit.changes;
 
-		new Setting(contentEl).setName("Title").addText((t) => t.setValue(changes.title).onChange((v) => (changes.title = v)));
+		new Setting(contentEl).setName("Titel").addText((t) => t.setValue(changes.title).onChange((v) => (changes.title = v)));
 
-		new Setting(contentEl).setName("List").addDropdown((d) => {
+		new Setting(contentEl).setName("Liste").addDropdown((d) => {
 			for (const stack of this.stacks) d.addOption(String(stack.id), stack.title);
 			d.setValue(String(card.stackId)).onChange((v) => (edit.stackId = Number(v)));
 		});
 
 		if (changes.done !== undefined) {
-			new Setting(contentEl).setName("Done").addToggle((t) => t.setValue(!!changes.done).onChange((v) => (changes.done = v)));
+			new Setting(contentEl).setName("Erledigt").addToggle((t) => t.setValue(!!changes.done).onChange((v) => (changes.done = v)));
 		}
 
-		const dueSetting = new Setting(contentEl).setName("Due").setDesc("Leave the time empty for the end of the day.");
+		const dueSetting = new Setting(contentEl).setName("Fällig").setDesc("Ohne Uhrzeit gilt das Ende des Tages.");
 		const dateInput = dueSetting.controlEl.createEl("input", { type: "date" });
 		const timeInput = dueSetting.controlEl.createEl("input", { type: "time" });
 		if (changes.duedate) {
@@ -81,7 +81,7 @@ export class CardModal extends Modal {
 		dueSetting.addExtraButton((b) =>
 			b
 				.setIcon("x")
-				.setTooltip("No due date")
+				.setTooltip("Kein Fälligkeitsdatum")
 				.onClick(() => {
 					dateInput.value = "";
 					timeInput.value = "";
@@ -104,9 +104,9 @@ export class CardModal extends Modal {
 			}
 		}
 
-		if (card.assignees.length) new Setting(contentEl).setName("Assigned").setDesc(card.assignees.join(", "));
+		if (card.assignees.length) new Setting(contentEl).setName("Zugewiesen").setDesc(card.assignees.join(", "));
 
-		new Setting(contentEl).setName("Description").addTextArea((t) => {
+		new Setting(contentEl).setName("Beschreibung").addTextArea((t) => {
 			t.setValue(changes.description).onChange((v) => (changes.description = v));
 			t.inputEl.rows = 6;
 		});
@@ -115,7 +115,7 @@ export class CardModal extends Modal {
 		new Setting(contentEl)
 			.addButton((b) =>
 				b
-					.setButtonText("Delete")
+					.setButtonText("Löschen")
 					.setWarning()
 					.onClick(() => {
 						this.close();
@@ -123,19 +123,19 @@ export class CardModal extends Modal {
 					})
 			)
 			.addButton((b) =>
-				b.setButtonText("Archive").onClick(() => {
+				b.setButtonText("Archivieren").onClick(() => {
 					this.close();
 					this.actions.archive();
 				})
 			)
-			.addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()))
+			.addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close()))
 			.addButton((b) => {
 				saveButton = b;
-				b.setButtonText("Save")
+				b.setButtonText("Speichern")
 					.setCta()
 					.onClick(async () => {
 						if (!changes.title.trim()) {
-							new Notice("Please enter a title.");
+							new Notice("Bitte einen Titel eingeben.");
 							return;
 						}
 						saveButton.setDisabled(true);
@@ -143,7 +143,7 @@ export class CardModal extends Modal {
 							await this.actions.save({ ...edit, changes: { ...changes, title: changes.title.trim() } });
 							this.close();
 						} catch (e) {
-							new Notice(`Could not save card: ${errorMessage(e)}`, 8000);
+							new Notice(`Karte konnte nicht gespeichert werden: ${errorMessage(e)}`, 8000);
 						} finally {
 							saveButton.setDisabled(false);
 						}
@@ -165,10 +165,10 @@ export function renderLabels(parent: HTMLElement, labels: { title: string; color
 	}
 }
 
-/** "Today 14:00", "Tomorrow 23:59", or a date and time. */
+/** "Heute 14:00", "Morgen 23:59" oder Datum und Uhrzeit. */
 export function formatDue(date: Date): string {
 	const due = moment(date);
 	const days = due.clone().startOf("day").diff(moment().startOf("day"), "days");
-	const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : days === -1 ? "Yesterday" : due.format("ll");
+	const day = days === 0 ? "Heute" : days === 1 ? "Morgen" : days === -1 ? "Gestern" : due.format("ll");
 	return `${day} ${due.format("LT")}`;
 }

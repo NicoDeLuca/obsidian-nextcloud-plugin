@@ -1,17 +1,31 @@
 import { App, WorkspaceLeaf } from "obsidian";
 import { NextcloudModule } from "../../core/types";
 import { CookbookApi } from "./CookbookApi";
-import { RECIPE_EDIT_VIEW, RecipeEditView, RecipeEditViewState } from "./RecipeEditView";
+import { Draft, DraftStore, RECIPE_EDIT_VIEW, RecipeEditView, RecipeEditViewState } from "./RecipeEditView";
 import { RECIPE_LIST_VIEW, RecipeListView } from "./RecipeListView";
 import { RECIPE_VIEW, RecipeView, RecipeViewState } from "./RecipeView";
 
+interface CookbookData {
+	drafts?: Record<string, Draft>;
+}
+
 export const cookbookModule: NextcloudModule = {
 	id: "cookbook",
-	name: "Cookbook",
-	description: "Browse and edit recipes from Nextcloud Cookbook.",
+	name: "Kochbuch",
+	description: "Rezepte aus Nextcloud Kochbuch ansehen und bearbeiten.",
 	load(ctx) {
 		const app = ctx.plugin.app;
 		const api = new CookbookApi(ctx.client);
+		const drafts: DraftStore = {
+			get: (key) => ctx.loadData<CookbookData>()?.drafts?.[key],
+			set: async (key, draft) => {
+				const data = ctx.loadData<CookbookData>() ?? {};
+				const all = { ...data.drafts };
+				if (draft) all[key] = draft;
+				else delete all[key];
+				await ctx.saveData({ ...data, drafts: all });
+			},
+		};
 
 		ctx.registerView(
 			RECIPE_LIST_VIEW,
@@ -26,18 +40,18 @@ export const cookbookModule: NextcloudModule = {
 		ctx.registerView(RECIPE_VIEW, (leaf) => new RecipeView(leaf, api, (leaf, id, name) => editRecipe(leaf, id, name)));
 		ctx.registerView(
 			RECIPE_EDIT_VIEW,
-			(leaf) => new RecipeEditView(leaf, api, (leaf, id, name, saved) => finishEditing(app, leaf, id, name, saved))
+			(leaf) => new RecipeEditView(leaf, api, drafts, (leaf, id, name, saved) => finishEditing(app, leaf, id, name, saved))
 		);
 
-		ctx.addRibbonIcon("chef-hat", "Open recipes", () => openRecipeList(app));
+		ctx.addRibbonIcon("chef-hat", "Rezepte öffnen", () => openRecipeList(app));
 		ctx.addCommand({
 			id: "cookbook-open-recipes",
-			name: "Open Cookbook recipes",
+			name: "Kochbuch-Rezepte öffnen",
 			callback: () => openRecipeList(app),
 		});
 		ctx.addCommand({
 			id: "cookbook-new-recipe",
-			name: "New Cookbook recipe",
+			name: "Neues Kochbuch-Rezept",
 			callback: () => editRecipe(app.workspace.getLeaf("tab")),
 		});
 	},

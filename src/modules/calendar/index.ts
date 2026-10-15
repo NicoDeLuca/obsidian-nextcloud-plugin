@@ -9,8 +9,8 @@ interface CalendarData {
 
 export const calendarModule: NextcloudModule = {
 	id: "calendar",
-	name: "Calendar",
-	description: "View and edit events from Nextcloud Calendar (CalDAV).",
+	name: "Kalender",
+	description: "Termine aus Nextcloud Kalender ansehen und bearbeiten (CalDAV).",
 	load(ctx) {
 		const app = ctx.plugin.app;
 		const api = new CalDavApi(ctx.client);
@@ -20,10 +20,10 @@ export const calendarModule: NextcloudModule = {
 		};
 
 		ctx.registerView(CALENDAR_VIEW, (leaf) => new CalendarView(leaf, api, hidden));
-		ctx.addRibbonIcon("calendar-days", "Open calendar", () => openCalendar(app));
+		ctx.addRibbonIcon("calendar-days", "Kalender öffnen", () => openCalendar(app));
 		ctx.addCommand({
 			id: "calendar-open",
-			name: "Open calendar",
+			name: "Kalender öffnen",
 			callback: () => openCalendar(app),
 		});
 	},

@@ -164,7 +164,7 @@ export function updateRecurringIcs(
 	// "following": end the stored series before this occurrence …
 	const isLater = (time: Date) => time.getTime() >= recurrenceId.getTime();
 	const oldRecur = master.getFirstPropertyValue("rrule") as ICAL.Recur | null;
-	if (!oldRecur) throw new Error("This series can't be split here; edit this event or all events instead.");
+	if (!oldRecur) throw new Error("Diese Serie lässt sich hier nicht teilen; bearbeite nur diesen Termin oder alle.");
 	const remaining = oldRecur.count ? oldRecur.count - countBefore(master, oldRecur, recurrenceId) : null;
 	endSeriesBefore(master, recurrenceId, occurrence.allDay);
 
@@ -233,7 +233,7 @@ export function deleteRecurringIcs(ics: string, occurrence: CalendarEvent, scope
 
 function findMaster(root: ICAL.Component): ICAL.Component {
 	const vevent = root.getAllSubcomponents("vevent").find((v) => !v.hasProperty("recurrence-id"));
-	if (!vevent) throw new Error("The event could not be found in the calendar data.");
+	if (!vevent) throw new Error("Der Termin wurde in den Kalenderdaten nicht gefunden.");
 	return vevent;
 }
 

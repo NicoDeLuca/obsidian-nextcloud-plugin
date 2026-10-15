@@ -16,7 +16,7 @@ export interface RecipeViewState {
  */
 export class RecipeView extends ItemView {
 	private recipeId: string | undefined;
-	private title = "Recipe";
+	private title = "Rezept";
 	private imageUrl: string | null = null;
 	private renderId = 0;
 
@@ -47,13 +47,13 @@ export class RecipeView extends ItemView {
 	async setState(state: unknown, result: ViewStateResult) {
 		const { recipeId, name } = state as RecipeViewState;
 		this.recipeId = recipeId;
-		this.title = name ?? "Recipe";
+		this.title = name ?? "Rezept";
 		await super.setState(state, result);
 		await this.render();
 	}
 
 	async onOpen() {
-		this.addAction("pencil", "Edit recipe", () => {
+		this.addAction("pencil", "Rezept bearbeiten", () => {
 			if (this.recipeId) this.onEdit(this.leaf, this.recipeId, this.title);
 		});
 	}
@@ -70,14 +70,14 @@ export class RecipeView extends ItemView {
 		el.addClass("nc-cookbook");
 		if (!this.recipeId) return;
 
-		el.createEl("p", { text: "Loading recipe…", cls: "nc-cookbook-status" });
+		el.createEl("p", { text: "Rezept wird geladen …", cls: "nc-cookbook-status" });
 		let recipe: Recipe;
 		try {
 			recipe = await this.api.getRecipe(this.recipeId);
 		} catch (e) {
 			if (renderId !== this.renderId) return;
 			el.empty();
-			el.createEl("p", { text: `Could not load recipe: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+			el.createEl("p", { text: `Rezept konnte nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 			return;
 		}
 		if (renderId !== this.renderId) return; // another recipe was opened meanwhile
@@ -90,19 +90,19 @@ export class RecipeView extends ItemView {
 		if (recipe.description) article.createEl("p", { text: recipe.description, cls: "nc-recipe-description" });
 
 		const meta = [
-			recipe.recipeYield ? `Servings: ${recipe.recipeYield}` : null,
-			labelled("Prep", formatDuration(recipe.prepTime)),
-			labelled("Cook", formatDuration(recipe.cookTime)),
-			labelled("Total", formatDuration(recipe.totalTime)),
+			recipe.recipeYield ? `Portionen: ${recipe.recipeYield}` : null,
+			labelled("Vorbereitung", formatDuration(recipe.prepTime)),
+			labelled("Kochzeit", formatDuration(recipe.cookTime)),
+			labelled("Gesamt", formatDuration(recipe.totalTime)),
 		].filter((m): m is string => !!m);
 		if (meta.length) article.createEl("p", { text: meta.join(" · "), cls: "nc-recipe-meta" });
 
 		if (recipe.recipeIngredient.length) {
-			article.createEl("h2", { text: "Ingredients" });
+			article.createEl("h2", { text: "Zutaten" });
 			renderChecklist(article.createEl("ul", { cls: "nc-recipe-checklist" }), recipe.recipeIngredient);
 		}
 		if (recipe.recipeInstructions.length) {
-			article.createEl("h2", { text: "Instructions" });
+			article.createEl("h2", { text: "Zubereitung" });
 			renderChecklist(article.createEl("ol", { cls: "nc-recipe-checklist" }), recipe.recipeInstructions);
 		}
 

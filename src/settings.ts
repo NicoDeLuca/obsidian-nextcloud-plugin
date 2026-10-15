@@ -11,11 +11,11 @@ export class NextcloudSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Connection").setHeading();
+		new Setting(containerEl).setName("Verbindung").setHeading();
 
 		new Setting(containerEl)
 			.setName("Nextcloud URL")
-			.setDesc("e.g. https://cloud.example.de")
+			.setDesc("z. B. https://cloud.example.de")
 			.addText((text) =>
 				text
 					.setPlaceholder("https://cloud.example.de")
@@ -26,7 +26,7 @@ export class NextcloudSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(containerEl).setName("Username").addText((text) =>
+		new Setting(containerEl).setName("Benutzername").addText((text) =>
 			text.setValue(this.plugin.settings.username).onChange(async (value) => {
 				this.plugin.settings.username = value.trim();
 				await this.plugin.saveSettings();
@@ -34,8 +34,8 @@ export class NextcloudSettingTab extends PluginSettingTab {
 		);
 
 		new Setting(containerEl)
-			.setName("App password")
-			.setDesc("Create one in Nextcloud under Settings → Security → Devices & sessions.")
+			.setName("App-Passwort")
+			.setDesc("Erstellen in Nextcloud unter Einstellungen → Sicherheit → Geräte & Sitzungen.")
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text.setValue(this.plugin.settings.appPassword).onChange(async (value) => {
@@ -44,21 +44,21 @@ export class NextcloudSettingTab extends PluginSettingTab {
 				});
 			});
 
-		new Setting(containerEl).setName("Test connection").addButton((button) =>
-			button.setButtonText("Test").onClick(async () => {
+		new Setting(containerEl).setName("Verbindung testen").addButton((button) =>
+			button.setButtonText("Testen").onClick(async () => {
 				button.setDisabled(true);
 				try {
 					const name = await this.plugin.client.testConnection();
-					new Notice(`Connected to Nextcloud as ${name}.`);
+					new Notice(`Verbunden mit Nextcloud als ${name}.`);
 				} catch (e) {
-					new Notice(`Connection failed: ${errorMessage(e)}`);
+					new Notice(`Verbindung fehlgeschlagen: ${errorMessage(e)}`);
 				} finally {
 					button.setDisabled(false);
 				}
 			})
 		);
 
-		new Setting(containerEl).setName("Modules").setHeading();
+		new Setting(containerEl).setName("Module").setHeading();
 
 		for (const module of this.plugin.registry.modules) {
 			new Setting(containerEl)

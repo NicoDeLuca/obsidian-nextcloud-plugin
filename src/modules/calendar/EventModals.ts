@@ -16,7 +16,7 @@ export class EventDetailModal extends Modal {
 
 	onOpen() {
 		const { event, contentEl } = this;
-		this.titleEl.setText(event.title || "(No title)");
+		this.titleEl.setText(event.title || "(Ohne Titel)");
 		contentEl.addClass("nc-cal-detail");
 		contentEl.createEl("p", { text: formatRange(event) });
 		const cal = contentEl.createEl("p", { cls: "nc-cal-detail-calendar" });
@@ -26,14 +26,14 @@ export class EventDetailModal extends Modal {
 		if (event.description) contentEl.createEl("p", { text: event.description, cls: "nc-cal-detail-description" });
 
 		if (event.calendar.readOnly) {
-			contentEl.createEl("p", { text: "This calendar is read-only.", cls: "nc-cal-hint" });
+			contentEl.createEl("p", { text: "Dieser Kalender ist schreibgeschützt.", cls: "nc-cal-hint" });
 			return;
 		}
-		if (event.recurring) contentEl.createEl("p", { text: "↻ Part of a recurring series", cls: "nc-cal-hint" });
+		if (event.recurring) contentEl.createEl("p", { text: "↻ Teil einer Terminserie", cls: "nc-cal-hint" });
 		new Setting(contentEl)
 			.addButton((b) =>
 				b
-					.setButtonText("Delete")
+					.setButtonText("Löschen")
 					.setWarning()
 					.onClick(() => {
 						this.close();
@@ -42,7 +42,7 @@ export class EventDetailModal extends Modal {
 			)
 			.addButton((b) =>
 				b
-					.setButtonText("Edit")
+					.setButtonText("Bearbeiten")
 					.setCta()
 					.onClick(() => {
 						this.close();
@@ -88,12 +88,12 @@ export class EventFormModal extends Modal {
 		contentEl.addClass("nc-cal-form");
 		const draft = this.draft;
 
-		new Setting(contentEl).setName("Title").addText((t) => {
+		new Setting(contentEl).setName("Titel").addText((t) => {
 			t.setValue(draft.title).onChange((v) => (draft.title = v));
 			window.setTimeout(() => t.inputEl.focus());
 		});
 
-		const calendarSetting = new Setting(contentEl).setName("Calendar");
+		const calendarSetting = new Setting(contentEl).setName("Kalender");
 		if (this.options.calendars) {
 			calendarSetting.addDropdown((d) => {
 				for (const c of this.options.calendars!) d.addOption(c.path, c.name);
@@ -105,7 +105,7 @@ export class EventFormModal extends Modal {
 			calendarSetting.setDesc(this.calendar.name);
 		}
 
-		new Setting(contentEl).setName("All day").addToggle((t) =>
+		new Setting(contentEl).setName("Ganztägig").addToggle((t) =>
 			t.setValue(draft.allDay).onChange((allDay) => {
 				// Keep the same days; give timed events a default slot.
 				const days = dayCount(draft);
@@ -125,8 +125,8 @@ export class EventFormModal extends Modal {
 		const renderTimes = () => {
 			timesEl.empty();
 			// Moving the start moves the end too (keeping the duration), so the end inputs need refreshing.
-			this.dateTimeSetting(timesEl, "Start", "start", () => end.refresh());
-			const end = this.dateTimeSetting(timesEl, "End", "end", () => {});
+			this.dateTimeSetting(timesEl, "Beginn", "start", () => end.refresh());
+			const end = this.dateTimeSetting(timesEl, "Ende", "end", () => {});
 		};
 		renderTimes();
 
@@ -134,18 +134,18 @@ export class EventFormModal extends Modal {
 			renderRecurrenceSetting(contentEl, this.rule, () => draft.start, (rule) => (this.rule = rule));
 		}
 
-		new Setting(contentEl).setName("Location").addText((t) => t.setValue(draft.location).onChange((v) => (draft.location = v)));
-		new Setting(contentEl).setName("Description").addTextArea((t) => {
+		new Setting(contentEl).setName("Ort").addText((t) => t.setValue(draft.location).onChange((v) => (draft.location = v)));
+		new Setting(contentEl).setName("Beschreibung").addTextArea((t) => {
 			t.setValue(draft.description).onChange((v) => (draft.description = v));
 			t.inputEl.rows = 4;
 		});
 
 		let saveButton: ButtonComponent;
 		new Setting(contentEl)
-			.addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()))
+			.addButton((b) => b.setButtonText("Abbrechen").onClick(() => this.close()))
 			.addButton((b) => {
 				saveButton = b;
-				b.setButtonText("Save")
+				b.setButtonText("Speichern")
 					.setCta()
 					.onClick(async () => {
 						const problem = validate(draft);
@@ -158,7 +158,7 @@ export class EventFormModal extends Modal {
 							await this.options.save({ ...draft, title: draft.title.trim() }, this.calendar, this.rule);
 							this.close();
 						} catch (e) {
-							new Notice(`Could not save event: ${errorMessage(e)}`, 8000);
+							new Notice(`Termin konnte nicht gespeichert werden: ${errorMessage(e)}`, 8000);
 						} finally {
 							saveButton.setDisabled(false);
 						}
@@ -214,11 +214,11 @@ export function chooseScope(app: App, title: string): Promise<Scope | null> {
 		let scope: Scope | null = null;
 		const modal = new Modal(app);
 		modal.titleEl.setText(title);
-		modal.contentEl.createEl("p", { text: "This event is part of a recurring series." });
+		modal.contentEl.createEl("p", { text: "Dieser Termin gehört zu einer Serie." });
 		const choices: [Scope, string][] = [
-			["this", "This event"],
-			["following", "This and following events"],
-			["all", "All events"],
+			["this", "Nur dieser Termin"],
+			["following", "Dieser und alle folgenden"],
+			["all", "Alle Termine der Serie"],
 		];
 		const buttons = modal.contentEl.createDiv({ cls: "nc-scope-choices" });
 		for (const [value, label] of choices) {
@@ -236,7 +236,7 @@ export function formatRange(event: { start: Date; end: Date; allDay: boolean }):
 	const start = moment(event.start);
 	if (event.allDay) {
 		const last = moment(event.end).subtract(1, "day");
-		return last.isSame(start, "day") ? `${start.format("dddd, ll")} · all day` : `${start.format("ll")} – ${last.format("ll")} · all day`;
+		return last.isSame(start, "day") ? `${start.format("dddd, ll")} · ganztägig` : `${start.format("ll")} – ${last.format("ll")} · ganztägig`;
 	}
 	const end = moment(event.end);
 	return end.isSame(start, "day")
@@ -249,7 +249,7 @@ function dayCount(draft: EventDraft): number {
 }
 
 function validate(draft: EventDraft): string | null {
-	if (!draft.title.trim()) return "Please enter a title.";
-	if (draft.allDay ? draft.end <= draft.start : draft.end < draft.start) return "The end must not be before the start.";
+	if (!draft.title.trim()) return "Bitte einen Titel eingeben.";
+	if (draft.allDay ? draft.end <= draft.start : draft.end < draft.start) return "Das Ende darf nicht vor dem Beginn liegen.";
 	return null;
 }

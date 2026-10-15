@@ -10,7 +10,7 @@ import { layoutDay } from "./layout";
 export const CALENDAR_VIEW = "nextcloud-calendar";
 
 type Mode = "day" | "3days" | "5days" | "week" | "month";
-const MODES: Record<Mode, string> = { day: "Day", "3days": "3 days", "5days": "5 days", week: "Week", month: "Month" };
+const MODES: Record<Mode, string> = { day: "Tag", "3days": "3 Tage", "5days": "5 Tage", week: "Woche", month: "Monat" };
 const DAYS: Record<Exclude<Mode, "month">, number> = { day: 1, "3days": 3, "5days": 5, week: 7 };
 
 const HOUR_PX = 48;
@@ -46,7 +46,7 @@ export class CalendarView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Calendar";
+		return "Kalender";
 	}
 
 	getIcon() {
@@ -107,7 +107,7 @@ export class CalendarView extends ItemView {
 		const [start, end] = this.range();
 		this.renderToolbar(start, end);
 		this.bodyEl.empty();
-		this.bodyEl.createEl("p", { text: "Loading…", cls: "nc-cookbook-status" });
+		this.bodyEl.createEl("p", { text: "Wird geladen …", cls: "nc-cookbook-status" });
 
 		let events: CalendarEvent[] = [];
 		try {
@@ -117,12 +117,12 @@ export class CalendarView extends ItemView {
 			const results = await Promise.allSettled(visible.map((c) => this.api.getEvents(c, start.toDate(), end.toDate())));
 			results.forEach((r, i) => {
 				if (r.status === "fulfilled") events.push(...r.value);
-				else if (loadId === this.loadId) new Notice(`Could not load "${visible[i].name}": ${errorMessage(r.reason)}`);
+				else if (loadId === this.loadId) new Notice(`"${visible[i].name}" konnte nicht geladen werden: ${errorMessage(r.reason)}`);
 			});
 		} catch (e) {
 			if (loadId !== this.loadId) return;
 			this.bodyEl.empty();
-			this.bodyEl.createEl("p", { text: `Could not load calendars: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
+			this.bodyEl.createEl("p", { text: `Kalender konnten nicht geladen werden: ${errorMessage(e)}`, cls: "nc-cookbook-status" });
 			return;
 		}
 		if (loadId !== this.loadId) return;
@@ -138,12 +138,12 @@ export class CalendarView extends ItemView {
 		const bar = this.toolbarEl;
 		bar.empty();
 		const nav = bar.createDiv({ cls: "nc-cal-toolbar-group" });
-		new ButtonComponent(nav).setButtonText("Today").onClick(() => {
+		new ButtonComponent(nav).setButtonText("Heute").onClick(() => {
 			this.date = moment().startOf("day");
 			this.changed();
 		});
-		new ButtonComponent(nav).setIcon("chevron-left").setTooltip("Previous").onClick(() => this.navigate(-1));
-		new ButtonComponent(nav).setIcon("chevron-right").setTooltip("Next").onClick(() => this.navigate(1));
+		new ButtonComponent(nav).setIcon("chevron-left").setTooltip("Zurück").onClick(() => this.navigate(-1));
+		new ButtonComponent(nav).setIcon("chevron-right").setTooltip("Weiter").onClick(() => this.navigate(1));
 
 		const last = end.clone().subtract(1, "day");
 		let title: string;
@@ -162,12 +162,12 @@ export class CalendarView extends ItemView {
 			});
 		new ButtonComponent(actions)
 			.setIcon("layers")
-			.setTooltip("Calendars")
+			.setTooltip("Kalender")
 			.onClick((evt) => this.showCalendarMenu(evt));
-		new ButtonComponent(actions).setIcon("refresh-cw").setTooltip("Reload").onClick(() => this.reload());
+		new ButtonComponent(actions).setIcon("refresh-cw").setTooltip("Neu laden").onClick(() => this.reload());
 		new ButtonComponent(actions)
 			.setIcon("plus")
-			.setTooltip("New event")
+			.setTooltip("Neuer Termin")
 			.setCta()
 			.onClick(() => this.newEvent(this.defaultStart()));
 	}
@@ -289,7 +289,7 @@ export class CalendarView extends ItemView {
 				.sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.getTime() - b.start.getTime());
 			for (const event of dayEvents.slice(0, MONTH_CHIPS)) this.chip(cell, event, !event.allDay);
 			if (dayEvents.length > MONTH_CHIPS) {
-				const more = cell.createDiv({ cls: "nc-cal-more", text: `+${dayEvents.length - MONTH_CHIPS} more` });
+				const more = cell.createDiv({ cls: "nc-cal-more", text: `+${dayEvents.length - MONTH_CHIPS} weitere` });
 				more.addEventListener("click", () => this.openDay(date));
 			}
 		}
@@ -307,7 +307,7 @@ export class CalendarView extends ItemView {
 		const el = parent.createDiv({ cls: "nc-cal-event" });
 		el.style.setProperty("--nc-cal-color", event.calendar.color);
 		if (withTime) el.createSpan({ cls: "nc-cal-event-time", text: moment(event.start).format("LT") });
-		el.createSpan({ cls: "nc-cal-event-title", text: event.title || "(No title)" });
+		el.createSpan({ cls: "nc-cal-event-title", text: event.title || "(Ohne Titel)" });
 		el.setAttr("title", event.title);
 		el.addEventListener("click", (evt) => {
 			evt.stopPropagation();
@@ -336,7 +336,7 @@ export class CalendarView extends ItemView {
 	private newEvent(start: moment.Moment) {
 		const calendars = this.writableCalendars();
 		if (!calendars.length) {
-			new Notice("There is no writable calendar.");
+			new Notice("Es gibt keinen beschreibbaren Kalender.");
 			return;
 		}
 		const draft: EventDraft = {
@@ -348,7 +348,7 @@ export class CalendarView extends ItemView {
 			description: "",
 		};
 		new EventFormModal(this.app, {
-			heading: "New event",
+			heading: "Neuer Termin",
 			draft,
 			calendar: calendars[0],
 			calendars,
@@ -356,27 +356,27 @@ export class CalendarView extends ItemView {
 			save: async (draft, calendar, rule) => {
 				const { uid, ics } = createEventIcs(draft, rule);
 				await this.api.saveEvent(`${calendar.path}${uid}.ics`, ics);
-				new Notice("Event created.");
+				new Notice("Termin angelegt.");
 				this.loadEvents();
 			},
 		}).open();
 	}
 
 	private async editEvent(event: CalendarEvent) {
-		const scope = event.recurring ? await chooseScope(this.app, "Edit recurring event") : null;
+		const scope = event.recurring ? await chooseScope(this.app, "Wiederkehrenden Termin bearbeiten") : null;
 		if (event.recurring && !scope) return;
 		let source: { ics: string; etag: string };
 		try {
 			source = await this.api.getEventSource(event.path);
 		} catch (e) {
-			new Notice(`Could not load event: ${errorMessage(e)}`, 8000);
+			new Notice(`Termin konnte nicht geladen werden: ${errorMessage(e)}`, 8000);
 			return;
 		}
 		// "This event" edits a single occurrence, so its form has no "Repeat" settings.
 		const rule = scope === "this" ? undefined : readRecurrence(source.ics, scope === "following" ? event : undefined);
 
 		new EventFormModal(this.app, {
-			heading: scope === "this" ? "Edit this event" : scope === "following" ? "Edit this and following events" : scope === "all" ? "Edit all events" : "Edit event",
+			heading: scope === "this" ? "Diesen Termin bearbeiten" : scope === "following" ? "Diesen und folgende bearbeiten" : scope === "all" ? "Alle Termine bearbeiten" : "Termin bearbeiten",
 			draft: { title: event.title, start: event.start, end: event.end, allDay: event.allDay, location: event.location, description: event.description },
 			calendar: event.calendar,
 			rule,
@@ -389,7 +389,7 @@ export class CalendarView extends ItemView {
 					await this.api.saveEvent(event.path, result.ics, latest.etag);
 					if (result.created) await this.api.saveEvent(`${event.calendar.path}${result.created.uid}.ics`, result.created.ics);
 				}
-				new Notice("Event saved.");
+				new Notice("Termin gespeichert.");
 				this.loadEvents();
 			},
 		}).open();
@@ -401,11 +401,11 @@ export class CalendarView extends ItemView {
 		if (source.etag !== event.etag) {
 			const overwrite = await confirmModal(
 				this.app,
-				"Event changed elsewhere",
-				"This event was changed somewhere else after the calendar was loaded. Saving overwrites those changes.",
-				"Overwrite"
+				"Termin wurde woanders geändert",
+				"Dieser Termin wurde woanders geändert, nachdem der Kalender geladen wurde. Speichern überschreibt diese Änderungen.",
+				"Überschreiben"
 			);
-			if (!overwrite) throw new Error("cancelled because the event changed elsewhere");
+			if (!overwrite) throw new Error("abgebrochen, weil der Termin woanders geändert wurde");
 		}
 		return source;
 	}
@@ -413,10 +413,10 @@ export class CalendarView extends ItemView {
 	private async deleteEvent(event: CalendarEvent) {
 		let scope: Scope | null = null;
 		if (event.recurring) {
-			scope = await chooseScope(this.app, "Delete recurring event");
+			scope = await chooseScope(this.app, "Wiederkehrenden Termin löschen");
 			if (!scope) return;
 		} else {
-			const confirmed = await confirmModal(this.app, "Delete event", `Delete "${event.title || "(No title)"}"?`, "Delete");
+			const confirmed = await confirmModal(this.app, "Termin löschen", `"${event.title || "(Ohne Titel)"}" löschen?`, "Löschen");
 			if (!confirmed) return;
 		}
 		try {
@@ -428,9 +428,9 @@ export class CalendarView extends ItemView {
 				if (ics === null) await this.api.deleteEvent(event.path, latest.etag);
 				else await this.api.saveEvent(event.path, ics, latest.etag);
 			}
-			new Notice("Event deleted.");
+			new Notice("Termin gelöscht.");
 		} catch (e) {
-			new Notice(isConflict(e) ? "The event was changed elsewhere. Reload and try again." : `Could not delete event: ${errorMessage(e)}`, 8000);
+			new Notice(isConflict(e) ? "Der Termin wurde woanders geändert. Bitte neu laden und erneut versuchen." : `Termin konnte nicht gelöscht werden: ${errorMessage(e)}`, 8000);
 		}
 		this.loadEvents();
 	}
