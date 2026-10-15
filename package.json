@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-nextcloud-plugin",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Modular Obsidian plugin for Nextcloud apps",
 	"main": "main.js",
 	"scripts": {

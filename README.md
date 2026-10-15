@@ -17,6 +17,9 @@ subtasks, quick add, checking off, and editing due date, priority and notes.
 title, description, due date, done state and labels, move cards (drag and drop on
 desktop), archive and delete them.
 
+**Activity module:** the Nextcloud activity feed with the server's filters
+(all, by you, by others, files, calendar, …), grouped by day.
+
 File sync is intentionally out of scope; use Remotely Sync for that.
 
 ## Installation
@@ -97,6 +100,12 @@ a board at the top. Type into "Add a card…" under a list and press Enter to ad
 card. Click a card to edit it; *List* moves it to another list (on desktop you can
 also drag cards). Assigning people and managing lists or boards is not supported yet.
 
+### Activity
+
+Open it from the ribbon (activity icon) or the command *Nextcloud: Open activity*.
+Pick a filter at the top; **Load more** at the end fetches older entries. Clicking
+an entry opens it in Nextcloud in your browser.
+
 ## Architecture
 
 ```
@@ -112,7 +121,8 @@ src/
     ├── cookbook/            # one folder per Nextcloud app
     ├── calendar/
     ├── tasks/
-    └── deck/
+    ├── deck/
+    └── activity/
 ```
 
 A module implements `NextcloudModule` and registers its views, commands and ribbon

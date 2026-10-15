@@ -2,6 +2,7 @@ import { Plugin } from "obsidian";
 import { ModuleRegistry } from "./core/ModuleRegistry";
 import { NextcloudClient } from "./core/NextcloudClient";
 import { DEFAULT_SETTINGS, NextcloudSettings } from "./core/types";
+import { activityModule } from "./modules/activity";
 import { calendarModule } from "./modules/calendar";
 import { cookbookModule } from "./modules/cookbook";
 import { deckModule } from "./modules/deck";
@@ -16,7 +17,7 @@ export default class NextcloudPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.client = new NextcloudClient(() => this.settings);
-		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule, deckModule]);
+		this.registry = new ModuleRegistry(this, [cookbookModule, calendarModule, tasksModule, deckModule, activityModule]);
 		this.registry.loadEnabled();
 		this.addSettingTab(new NextcloudSettingTab(this.app, this));
 	}
